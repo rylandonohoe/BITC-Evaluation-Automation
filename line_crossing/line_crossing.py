@@ -5,14 +5,14 @@ import sys
 
 # 1. IMAGE ACQUISITION
 
-filename = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/line_crossing/Daskalon.png"
+filename = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/line_crossing/test1.png"
 img = cv.imread(cv.samples.findFile(filename))
 
 if img is None:
     sys.exit("Could not read the image.")
 
-cv.imshow("Display window", img)
-k = cv.waitKey(0)
+#cv.imshow("Display window", img)
+#k = cv.waitKey(0)
 
 # 2. IMAGE PRE-PROCESSING
 
@@ -20,15 +20,15 @@ k = cv.waitKey(0)
 gray1 = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 gray3 = cv.cvtColor(gray1, cv.COLOR_GRAY2RGB) # convert gray1 to three channel for addWeighted function
 
-cv.imshow("Display window", gray3)
-k = cv.waitKey(0)
+#cv.imshow("Display window", gray3)
+#k = cv.waitKey(0)
 
 # noise reduction (Gaussian blur)
 kernel_size = (3, 3) # larger = blurrier
 blur_gray3 = cv.GaussianBlur(gray3, kernel_size, 0)
 
-cv.imshow("Display window", blur_gray3)
-k = cv.waitKey(0)
+#cv.imshow("Display window", blur_gray3)
+#k = cv.waitKey(0)
 
 # 3. EDGE AND LINE DETECTION
 
@@ -59,8 +59,8 @@ for line in formatted_lines:
 
 line_blur_gray3 = cv.addWeighted(blur_gray3, 0.8, line_img, 1, 0)
 
-cv.imshow("Display window", line_blur_gray3)
-k = cv.waitKey(0)
+#cv.imshow("Display window", line_blur_gray3)
+#k = cv.waitKey(0)
 
 # 4. INTERSECTION DETECTION
 
@@ -124,8 +124,8 @@ intersection_thickness = 8
 for intersection in merged_intersections:
     cv.circle(intersection_line_blur_gray3, tuple(map(int, intersection)), intersection_thickness, (0, 255, 0), -1)
 
-cv.imshow("Display window", intersection_line_blur_gray3)
-k = cv.waitKey(0)
+#cv.imshow("Display window", intersection_line_blur_gray3)
+#k = cv.waitKey(0)
 
 # 5. POST-PROCESSING
 
@@ -156,7 +156,6 @@ mapping = {(0, 1): 0.0,
 
 lines_crossed_SV = None
 for interval, standard_value in mapping.items():
-    print(len(interval))
     if len(interval) == 2: 
         if interval[0] <= lines_crossed <= interval[1]:
             lines_crossed_SV = standard_value
@@ -168,7 +167,6 @@ for interval, standard_value in mapping.items():
 
 # orienting image
 def find_first_nonwhite_pixel(img):
-    # check each side from top, right, bottom, left
     noise_threshold = 10
     sides = [("top", img[noise_threshold:]), 
              ("right", np.rot90(img[:, :-noise_threshold])), 
@@ -206,5 +204,5 @@ closest_side = min(nonwhite_coords, key=nonwhite_coords.get)
 angle = rotation_based_on_side(closest_side)
 rotated_intersection_line_blur_gray3 = rotate_image(intersection_line_blur_gray3, angle)
 
-cv.imshow("Display window", rotated_intersection_line_blur_gray3)
-k = cv.waitKey(0)
+#cv.imshow("Display window", rotated_intersection_line_blur_gray3)
+#k = cv.waitKey(0)
