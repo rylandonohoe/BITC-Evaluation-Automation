@@ -1,9 +1,9 @@
 import os
 import pandas as pd
-import line_crossing.line_crossing as LineC
-#import diamond_drawing.diamond_drawing as DrawDiamond
+import diagnostics.line_cancellation as diag_LineC
+import diagnostics.diamond_drawing as diag_DrawDiamond
 
-pathname = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients" # path to the directory containing pseudonym folders
+pathname = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients" # path to directory containing pseudonym folders
 data = []
 
 # iterate through the pseudonym folders
@@ -11,29 +11,33 @@ for folder_name in os.listdir(pathname):
     folder_path = os.path.join(pathname, folder_name)
     if os.path.isdir(folder_path):
         row_data = {'Pseudonym': folder_name,
-                    'BIT_LineC': None,
-                    'BIT_LineC_SV': None,
+                    'BIT_LineC': None, # line cancellation test: number of lines crossed
+                    'BIT_LineC_SV': None, # line cancellation test: standard value of number of lines crossed
+                    'BIT_LineC_LS': None, # line cancellation test: number of lines crossed on left side
+                    'BIT_LineC_RS': None, # line cancellation test: number of lines crossed on right side
                     'BIT_LetC': None,
                     'BIT_LetC_SV': None,
                     'BIT_StarC': None,
                     'BIT_StarC_SV': None,
                     'BIT_DrawStar': None,
                     'BIT_DrawStar_SV': None,
-                    'BIT_DrawDiamond': None,
-                    'BIT_DrawDiamond_SV': None,
+                    'BIT_DrawDiamond': None, # diamond drawing test: final score
+                    'BIT_DrawDiamond_SV': None, # diamond drawing test: standard value of final score
                     'BIT_DrawFlower': None,
                     'BIT_DrawFlower_SV': None,
                     'BIT_LineB': None,
                     'BIT_LineB_SV': None,
                     'BIT_DrawClock': None,
                     'BIT_DrawClock_SV': None}
-        # iterate through the files in the pseudonym folder
+        # iterate through files in pseudonym folder
         for file_name in os.listdir(folder_path):
             file_path = os.path.join(folder_path, file_name)
             if os.path.isfile(file_path):
                 if file_name == "LineC.png":
-                    row_data['BIT_LineC'] = LineC.process_image(file_path)[0]
-                    row_data['BIT_LineC_SV'] = LineC.process_image(file_path)[1]
+                    row_data['BIT_LineC'] = diag_LineC.process_image(file_path)[0]
+                    row_data['BIT_LineC_SV'] = diag_LineC.process_image(file_path)[1]
+                    row_data['BIT_LineC_LS'] = ...
+                    row_data['BIT_LineC_RS'] = ...
                 elif file_name == "LetC.png":
                     row_data['BIT_LetC'] = ...
                     row_data['BIT_LetC_SV'] = ...
