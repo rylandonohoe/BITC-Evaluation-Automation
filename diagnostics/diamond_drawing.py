@@ -251,6 +251,8 @@ def arrangement_evaluation(corners):
         score = 1
     return score 
 
+
+
 def process_image(file_path):
     img = image_acquisition(file_path)
     erode = image_pre_processing(img)
@@ -261,9 +263,6 @@ def process_image(file_path):
     detail_score = detail_evaluation(valid_lines)
     arrangement_score = arrangement_evaluation(corners)
     final_score = form_score + detail_score + arrangement_score
-    print(form_score)
-    print(detail_score)
-    print(arrangement_score)
     return final_score
 
 file_path = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/Gerke/DrawDiamond.png"
