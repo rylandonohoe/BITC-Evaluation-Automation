@@ -1,8 +1,7 @@
 import cv2 as cv
-import math
 import numpy as np
-import sys
 from sklearn.cluster import DBSCAN
+import sys
 
 def image_acquisition(file_path):
     img = cv.imread(cv.samples.findFile(file_path))
@@ -16,153 +15,255 @@ def image_acquisition(file_path):
     return img
 
 def image_pre_processing(img):
-    # edge enhancement (unsharp masking)
-    blurred = cv.GaussianBlur(img, (0, 0), 3)
-    sharpened = cv.addWeighted(img, 1.5, blurred, -0.5, 0)
+    # grayscale conversion
+    gray1 = cv.cvtColor(img, cv.COLOR_BGR2GRAY) # image is now 1-channel
 
-    # contrast adjustment (histogram equalization)
-    gray1 = cv.cvtColor(sharpened, cv.COLOR_BGR2GRAY)
-    equalized_gray1 = cv.equalizeHist(gray1)
-    gray3 = cv.cvtColor(equalized_gray1, cv.COLOR_GRAY2BGR) # convert gray1 to three channel for addWeighted function
-
-    # noise reduction (Gaussian blur)
-    kernel_size = (7, 7) # larger = blurrier
-    blur_gray3 = cv.GaussianBlur(gray3, kernel_size, 0)
-    
-    #cv.imshow("Display window", blur_gray3)
+    #cv.imshow("Display window", gray1)
     #k = cv.waitKey(0)
 
-    return blur_gray3
+    # thresholding (part 1)
+    ret, thresh1 = cv.threshold(gray1, 200, 255, cv.THRESH_BINARY)
 
-def edge_and_line_detection(blur_gray3):
-    line_img = np.zeros((blur_gray3.shape[0], blur_gray3.shape[1], 3), dtype=np.uint8) # blank image with same size as blur_gray3
-    line_img[:] = (255, 255, 255) # background of line_img set to white
+    #cv.imshow("Display window", thresh1)
+    #k = cv.waitKey(0)
 
     # edge detection
-    lower_threshold = 25 # lower threshold value in Hysteresis Thresholding
-    upper_threshold = 100 # upper threshold value in Hysteresis Thresholding
-    aperture_size = 7 # aperture size of the Sobel filter
-    edges = cv.Canny(blur_gray3, lower_threshold, upper_threshold, aperture_size)
+    lower_threshold = 10 # lower threshold value in Hysteresis Thresholding
+    upper_threshold = 20 # upper threshold value in Hysteresis Thresholding
+    aperture_size = 3 # aperture size of the Sobel filter
+    edges = cv.Canny(thresh1, lower_threshold, upper_threshold, aperture_size)
 
-    # line detection
-    rho = 1 # distance resolution in pixels of the Hough grid
-    theta = np.pi / 180 # angular resolution in radians of the Hough grid
-    threshold = 5 # minimum number of votes (intersections in Hough grid cell)
-    min_line_length = 10 # minimum number of pixels making up a line
-    max_line_gap = 15 # maximum gap in pixels between connectable line segments
-    lines = cv.HoughLinesP(edges, rho, theta, threshold, np.array([]), min_line_length, max_line_gap)
-    formatted_lines = [[[x1, y1], [x2, y2]] for [[x1, y1, x2, y2]] in lines]
-
-    # draw the lines on line_img
-    line_thickness = 5
-    for line in formatted_lines:
-        x1, y1 = line[0]
-        x2, y2 = line[1]
-        cv.line(line_img, (x1, y1), (x2, y2), (255, 0, 0), line_thickness)
-
-    line_blur_gray3 = cv.addWeighted(blur_gray3, 0.8, line_img, 1, 0)
-
-    #cv.imshow("Display window", line_blur_gray3)
+    #cv.imshow("Display window", edges)
     #k = cv.waitKey(0)
 
-    return line_blur_gray3, formatted_lines
+    # noise reduction (part 1)
+    blur1 = cv.fastNlMeansDenoising(edges, None, h=25, templateWindowSize=25, searchWindowSize=25)
+    
+    #cv.imshow("Display window", blur1)
+    #k = cv.waitKey(0)
 
-def intersection_detection(line_blur_gray3, formatted_lines):
-    # intersection detection
-    def lines_similar(line1, line2, slope_threshold):
-        slope1 = (line1[1][1] - line1[0][1]) / (line1[1][0] - line1[0][0]) if line1[1][0] != line1[0][0] else 1000000
-        slope2 = (line2[1][1] - line2[0][1]) / (line2[1][0] - line2[0][0]) if line2[1][0] != line2[0][0] else 1000000
-        
-        return abs(slope1 - slope2) < slope_threshold # true if slopes of lines are similar enough
+    # dilation
+    element = cv.getStructuringElement(cv.MORPH_ELLIPSE, (5, 5))
+    dilated = cv.dilate(blur1, element, iterations=14)
 
-    def det(a, b, c, d):
-        return a * d - b * c
+    #cv.imshow("Display window", dilated)
+    #k = cv.waitKey(0)
 
-    def line_intersection(line1, line2):
-        x1, y1, x2, y2 = line1[0][0], line1[0][1], line1[1][0], line1[1][1]
-        x3, y3, x4, y4 = line2[0][0], line2[0][1], line2[1][0], line2[1][1]
+    # erosion
+    element = cv.getStructuringElement(cv.MORPH_ELLIPSE, (5, 5))
+    eroded = cv.erode(dilated, element, iterations=15)
 
-        det1_and_2 = det(x1, y1, x2, y2)
-        det3_and_4 = det(x3, y3, x4, y4)
-        denominator = det(x1 - x2, y1 - y2, x3 - x4, y3 - y4)
+    #cv.imshow("Display window", eroded)
+    #k = cv.waitKey(0)
 
-        if np.isclose(denominator, 0):
-            return None
-        
-        x = (det(det1_and_2, x1 - x2, det3_and_4, x3 - x4) / denominator)
-        y = (det(det1_and_2, y1 - y2, det3_and_4, y3 - y4) / denominator)
+    # noise reduction (part 2)
+    blur2 = cv.fastNlMeansDenoising(eroded, None, h=25, templateWindowSize=25, searchWindowSize=25)
+    
+    #cv.imshow("Display window", blur2)
+    #k = cv.waitKey(0)
 
-        # check if intersection point falls within the domain and range of both lines and is not along the image border
-        border_threshold = 130 # how far the arrow is from the border of the page
+    # noise reduction (part 3)
+    diameter = 30
+    sigma_color = 100
+    sigma_space = 30
+    blur3 = cv.bilateralFilter(blur2, diameter, sigma_color, sigma_space)
 
-        if min(x1, x2) <= x <= max(x1, x2) and min(y1, y2) <= y <= max(y1, y2) and min(x3, x4) <= x <= max(x3, x4) and min(y3, y4) <= y <= max(y3, y4):
-            if border_threshold <= x <= line_blur_gray3.shape[1] - border_threshold and border_threshold <= y <= line_blur_gray3.shape[0] - border_threshold: 
-                return x, y
-        else:
-            return None
+    #cv.imshow("Display window", blur3)
+    #k = cv.waitKey(0)
 
-    intersections = []
-    for i in range(len(formatted_lines)):
-        for j in range(i+1, len(formatted_lines)):
-            if not lines_similar(formatted_lines[i], formatted_lines[j], 1.0): # 1.0 as slope threshold
-                intersection = line_intersection(formatted_lines[i], formatted_lines[j])
-                if intersection:
-                    intersections.append(intersection)
+    # thresholding (part 2)
+    ret, thresh2 = cv.threshold(blur3, 127, 255, cv.THRESH_BINARY)
+
+    #cv.imshow("Display window", thresh2)
+    #k = cv.waitKey(0)
+
+    pre_processed_img = thresh2
+
+    return pre_processed_img
+
+def contour_detection(img, pre_processed_img):
+    contours, hierarchy = cv.findContours(pre_processed_img, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE)
+    
+    contour_img = img.copy()
+    cv.drawContours(contour_img, contours, -1, (0, 255, 0), 5)
+
+    #cv.imshow("Display window", contour_img)
+    #k = cv.waitKey(0)
+
+    return contour_img, contours
+
+def intersection_detection(contour_img, contours):
+    centroids = []
+    arrow_centroid = None
+
+    height, width = contour_img.shape[:2]
+    border_buffer = 25
+    min_distance_to_border = float('inf')
+    for contour in contours:
+        M = cv.moments(contour)
+        area = cv.contourArea(contour)
+        if M['m00'] != 0 and 0 < area < 4000:
+            cx = int(M['m10'] / M['m00'])
+            cy = int(M['m01'] / M['m00'])
+            distance_to_border = min(cx, cy, width - cx, height - cy)
+            if distance_to_border > border_buffer: # avoid border contours caused by scanning
+                if distance_to_border < min_distance_to_border: # isolate arrow centroid
+                    min_distance_to_border = distance_to_border
+                    if arrow_centroid is not None:
+                        centroids.append([arrow_centroid[0], arrow_centroid[1]])
+                    arrow_centroid = cx, cy
+                else:
+                    centroids.append([cx, cy])
 
     # merge intersections
-    def dbscan_merge_points(points, epsilon):
-        points_array = np.array(points)
-        clustering = DBSCAN(eps=epsilon, min_samples=1).fit(points_array)
-        labels = clustering.labels_
-
-        merged_points = []
-
-        for label in set(labels):
-            cluster_points = points_array[labels == label]
+    merged_centroids = []
+    centroids_array = np.array(centroids)
+    clustering = DBSCAN(eps=100, min_samples=1).fit(centroids_array) 
+    labels = clustering.labels_
+    
+    for label in set(labels):
+        if label != -1: # ignore noise points
+            cluster_points = centroids_array[labels == label]
             centroid = np.mean(cluster_points, axis=0)
-            merged_points.append(tuple(centroid))
+            merged_centroids.append(tuple(centroid))
 
-        return merged_points
-
-    cluster_threshold = 50
-    merged_intersections = dbscan_merge_points(intersections, cluster_threshold)
-
-    # draw the merged intersections on line_blur_gray3
-    intersection_line_blur_gray3 = line_blur_gray3
+    intersection_img = contour_img.copy()
     intersection_thickness = 8
-    for intersection in merged_intersections:
-        cv.circle(intersection_line_blur_gray3, tuple(map(int, intersection)), intersection_thickness, (0, 255, 0), -1)
+    for centroid in merged_centroids:
+        cv.circle(intersection_img, (int(centroid[0]), int(centroid[1])), intersection_thickness, (0, 255, 255), -1)
+    cv.circle(intersection_img, arrow_centroid, intersection_thickness, (0, 0, 0), -1)
 
-    #cv.imshow("Display window", intersection_line_blur_gray3)
+    #cv.imshow("Display window", intersection_img)
+    #k = cv.waitKey(0)
+    
+    return intersection_img, merged_centroids, arrow_centroid
+
+def orient_image(intersection_img, merged_centroids, arrow_centroid):
+    # determine side arrow is on assuming arrow is centred
+    def get_closest_side(img, arrow_centroid):
+        height, width = img.shape[:2]
+        x, y = arrow_centroid
+
+        if x <= width/4:
+            return "left"
+        elif x >= 3*width/4:
+            return "right"
+        elif y <= height/4:
+            return "top"
+        elif y >= 3*height/4:
+            return "bottom"
+        else:
+            return None
+    
+    def rotation_based_on_side(side):
+        return {"top": 180, "right": 270, "bottom": 0, "left": 90}.get(side, 0)
+
+    def rotate_image_and_centroids(img, centroids, angle):
+        height, width = img.shape[:2]
+        centre = (width / 2, height / 2)
+
+        M = cv.getRotationMatrix2D(centre, angle, 1.0)
+
+        # calculate new image size after rotation
+        radians = np.deg2rad(angle)
+        new_width = int(abs(height * np.sin(radians)) + abs(width * np.cos(radians)))
+        new_height = int(abs(height * np.cos(radians)) + abs(width * np.sin(radians)))
+
+        M[0, 2] += new_width / 2 - centre[0]
+        M[1, 2] += new_height / 2 - centre[1]
+
+        rotated_img = cv.warpAffine(img, M, (new_width, new_height))
+
+        # rotate centroids
+        centroids = np.array(centroids)
+        centroids = np.hstack((centroids, np.ones((centroids.shape[0], 1))))
+        rotated_centroids = np.matmul(M, centroids.T).T
+
+        return rotated_img, rotated_centroids
+
+    closest_side = get_closest_side(intersection_img, arrow_centroid)
+    angle = rotation_based_on_side(closest_side)
+    rotated_img, rotated_centroids = rotate_image_and_centroids(intersection_img, merged_centroids, angle)
+
+    #cv.imshow("Display window", rotated_img)
     #k = cv.waitKey(0)
 
-    return intersection_line_blur_gray3, merged_intersections
+    return rotated_img, rotated_centroids
 
-def post_processing(intersection_line_blur_gray3, merged_intersections):
+def target_detection(scoring_img, rotated_centroids, LineC_T_C1):
+    superposition_img = scoring_img.copy()
+    centroid_thickness = 8
+    for centroid in LineC_T_C1:
+        cv.circle(superposition_img, (int(centroid[0]), int(centroid[1])), centroid_thickness, (0, 0, 0), -1)
+    
+    #cv.imshow("Display window", superposition_img)
+    #k = cv.waitKey(0)
+
+    # determine subset of LineC_T_C1 that are detected
+    detected_centroids = []
+    distance_threshold = 125
+    for template_centroid in LineC_T_C1:
+        for centroid in rotated_centroids:
+            distance = np.sqrt((centroid[0] - template_centroid[0])**2 + (centroid[1] - template_centroid[1])**2)
+            if distance < distance_threshold:
+                detected_centroids.append(tuple(template_centroid))
+
+    detected_img = superposition_img.copy()
+    centroid_thickness = 8
+    for centroid in detected_centroids:
+        cv.circle(detected_img, (int(centroid[0]), int(centroid[1])), centroid_thickness, (127, 127, 127), -1)
+    
+    #cv.imshow("Display window", detected_img)
+    #k = cv.waitKey(0)
+
+    return detected_img, detected_centroids
+
+def post_processing(rotated_img, rotated_centroids, detected_centroids, LineC_T_C1):    
+    # determine number of lines crossed on left and right sides
+    left_centroids = []
+    right_centroids = []
+    scoring_img = rotated_img.copy()
+    centroid_thickness = 8
+
+    for centroid in rotated_centroids:
+        height, width = rotated_img.shape[:2]
+        x, y = centroid
+        if x <= (width/2 - 200):
+            left_centroids.append(centroid)
+            cv.circle(scoring_img, (int(centroid[0]), int(centroid[1])), centroid_thickness, (255, 0, 0), -1)
+        elif x >= (width/2 + 200):
+            right_centroids.append(centroid)
+            cv.circle(scoring_img, (int(centroid[0]), int(centroid[1])), centroid_thickness, (0, 0, 255), -1)
+    
+    #cv.imshow("Display window", scoring_img)
+    #k = cv.waitKey(0)
+
+    LineC_LS = len(left_centroids)
+    LineC_RS = len(right_centroids)
+    LineC = LineC_LS + LineC_RS
+
     # determine standard value
-    LineC = len(merged_intersections) - 4 # subtract the 4 crosses in the middle
-
     mapping = {(0, 1): 0.0,
-            (2, 3): 0.5,
-            (4, 5): 1.0,
-            (6,): 1.5,
-            (7, 8): 2.0,
-            (9, 10): 2.5,
-            (11, 12): 3.0,
-            (13, 14): 3.5,
-            (15, 16): 4.0,
-            (17,): 4.5,
-            (18, 19): 5.0,
-            (20,): 5.5,
-            (21,): 6.0,
-            (22, 23): 6.5,
-            (24, 25): 7.0,
-            (26, 27): 7.5,
-            (28,): 8.0,
-            (29, 30): 8.5,
-            (31, 32): 9.0,
-            (33, 34): 9.5,
-            (35, 36): 10.0}
+               (2, 3): 0.5,
+               (4, 5): 1.0,
+               (6,): 1.5,
+               (7, 8): 2.0,
+               (9, 10): 2.5,
+               (11, 12): 3.0,
+               (13, 14): 3.5,
+               (15, 16): 4.0,
+               (17,): 4.5,
+               (18, 19): 5.0,
+               (20,): 5.5,
+               (21,): 6.0,
+               (22, 23): 6.5,
+               (24, 25): 7.0,
+               (26, 27): 7.5,
+               (28,): 8.0,
+               (29, 30): 8.5,
+               (31, 32): 9.0,
+               (33, 34): 9.5,
+               (35, 36): 10.0}
 
     LineC_SV = None
     for interval, standard_value in mapping.items():
@@ -174,60 +275,39 @@ def post_processing(intersection_line_blur_gray3, merged_intersections):
             if interval[0] == LineC:
                 LineC_SV = standard_value
                 break
+    
+    # determine horizontal and vertical centres of cancellation
+    def calculate_CoC(detected_centroids, LineC_T_C1):
+        # calculate the mean positions
+        mean_x_targets, mean_y_targets = np.mean(LineC_T_C1, axis=0)
+        mean_x_detected, mean_y_detected = np.mean(detected_centroids, axis=0)
 
-    # orienting image
-    def find_first_nonwhite_pixel(img):
-        noise_threshold = 100
-        sides = [("top", img[noise_threshold:]), 
-                ("right", np.rot90(img[:, :-noise_threshold])), 
-                ("bottom", np.flipud(img[:-noise_threshold])), 
-                ("left", np.rot90(img[:, noise_threshold:]))]
-        nonwhite_coords = {}
-        for side, side_img in sides:
-            nonwhite_coords[side] = next(((i+noise_threshold,j) for i,row in enumerate(side_img) for j,pixel in enumerate(row) if np.any(pixel != 255)), None)
-        return nonwhite_coords
+        # calculate the leftmost, bottommost, rightmost, and topmost targets
+        leftmost_target, bottommost_target = np.min(LineC_T_C1, axis=0)
+        rightmost_target, topmost_target = np.max(LineC_T_C1, axis=0)
 
-    def rotation_based_on_side(side):
-        return {"top": 180, "right": 90, "bottom": 0, "left": 270}.get(side, 0)
+        # adjust the scale so that range of targets is from -1 to 1 with the mean of targets being 0
+        LineC_HCoC = round(2 * (mean_x_detected - mean_x_targets) / (rightmost_target - leftmost_target), 2)
+        LineC_VCoC = round(2 * (mean_y_detected - mean_y_targets) / (topmost_target - bottommost_target), 2)
 
-    def rotate_image(img, angle):
-        (h, w) = img.shape[:2]
-        center = (w / 2, h / 2)
+        return LineC_HCoC, LineC_VCoC
 
-        M = cv.getRotationMatrix2D(center, angle, 1.0)
+    LineC_HCoC, LineC_VCoC = calculate_CoC(detected_centroids, LineC_T_C1)
 
-        # calculate new image size after rotation
-        r = np.deg2rad(angle)
-        new_w = int(abs(h * np.sin(r)) + abs(w * np.cos(r)))
-        new_h = int(abs(h * np.cos(r)) + abs(w * np.sin(r)))
+    return LineC_LS, LineC_RS, LineC, LineC_SV, LineC_HCoC, LineC_VCoC
 
-        M[0, 2] += new_w / 2 - center[0]
-        M[1, 2] += new_h / 2 - center[1]
-
-        rotated = cv.warpAffine(img, M, (new_w, new_h))
-
-        return rotated
-
-    # find the side with the arrow and rotate the image
-    nonwhite_coords = find_first_nonwhite_pixel(intersection_line_blur_gray3)
-    closest_side = min(nonwhite_coords, key=nonwhite_coords.get)
-    angle = rotation_based_on_side(closest_side)
-    rotated_intersection_line_blur_gray3 = rotate_image(intersection_line_blur_gray3, angle)
-
-    cv.imshow("Display window", rotated_intersection_line_blur_gray3)
-    k = cv.waitKey(0)
-
-    return LineC, LineC_SV
-
-
-
-def process_image(file_path):
+def process_image(file_path, LineC_T_C1):
     img = image_acquisition(file_path)
-    blur_gray3 = image_pre_processing(img)
-    line_blur_gray3, formatted_lines = edge_and_line_detection(blur_gray3)
-    intersection_line_blur_gray3, merged_intersections = intersection_detection(line_blur_gray3, formatted_lines)
-    LineC, LineC_SV = post_processing(intersection_line_blur_gray3, merged_intersections)
-    return LineC, LineC_SV
+    pre_processed_img = image_pre_processing(img)
+    contour_img, contours = contour_detection(img, pre_processed_img)
+    intersection_img, merged_centroids, arrow_centroid = intersection_detection(contour_img, contours)
+    rotated_img, rotated_centroids = orient_image(intersection_img, merged_centroids, arrow_centroid)
+    detected_img, detected_centroids = target_detection(rotated_img, rotated_centroids, LineC_T_C1)
+    LineC_LS, LineC_RS, LineC, LineC_SV, LineC_HCoC, LineC_VCoC = post_processing(detected_img, rotated_centroids, detected_centroids, LineC_T_C1)
+    return LineC_LS, LineC_RS, LineC, LineC_SV, LineC_HCoC, LineC_VCoC
 
-a = process_image("/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/Daskalon/LineC.png")
-print(a)
+#import line_cancellation_template
+#file_path1 = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/Gerke/LineC.png"
+#file_path2 = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/Templates/LineC_T.png"
+#LineC_T_C1 = line_cancellation_template.process_image(file_path2)
+#print(process_image(file_path1, LineC_T_C1))
