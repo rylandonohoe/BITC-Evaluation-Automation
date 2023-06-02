@@ -1,20 +1,30 @@
 import os
 import pandas as pd
-import diagnostics.line_cancellation as diag_LineC
-import diagnostics.diamond_drawing as diag_DrawDiamond
 
-pathname = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients" # path to directory containing pseudonym folders
+import diagnostics.line_cancellation_template as diag_LineC_T
+import diagnostics.line_cancellation as diag_LineC
+#import diagnostics.diamond_drawing as diag_DrawDiamond
+import diagnostics.line_bisection as diag_LineB
+
+pathname = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation" # path to directory containing your added patients in the patient folder
 data = []
 
-# iterate through the pseudonym folders
-for folder_name in os.listdir(pathname):
-    folder_path = os.path.join(pathname, folder_name)
+# iterate through templates folder to determine template constants
+templates_folder_path = os.path.join(pathname, "templates")
+for file_name in os.listdir(templates_folder_path):
+    file_path = os.path.join(templates_folder_path, file_name)
+    if os.path.isfile(file_path):
+        if file_name == "LineC_T.png":
+             LineC_T_C1 = diag_LineC_T.process_image(file_path) # line cancellation test template, constant 1: coordinates of centroids of non-central lines
+                    
+# iterate through patients folder to determine patient scores
+patients_folder_path = os.path.join(pathname, "patients")
+for folder_name in os.listdir(patients_folder_path):
+    folder_path = os.path.join(patients_folder_path, folder_name)
     if os.path.isdir(folder_path):
         row_data = {'Pseudonym': folder_name,
                     'BIT_LineC': None, # line cancellation test: number of lines crossed
                     'BIT_LineC_SV': None, # line cancellation test: standard value of number of lines crossed
-                    'BIT_LineC_LS': None, # line cancellation test: number of lines crossed on left side
-                    'BIT_LineC_RS': None, # line cancellation test: number of lines crossed on right side
                     'BIT_LetC': None,
                     'BIT_LetC_SV': None,
                     'BIT_StarC': None,
@@ -25,19 +35,25 @@ for folder_name in os.listdir(pathname):
                     'BIT_DrawDiamond_SV': None, # diamond drawing test: standard value of final score
                     'BIT_DrawFlower': None,
                     'BIT_DrawFlower_SV': None,
-                    'BIT_LineB': None,
-                    'BIT_LineB_SV': None,
+                    'BIT_LineB': None, # line bisection test: final score
+                    'BIT_LineB_SV': None, # line bisection test: standard value of final score
                     'BIT_DrawClock': None,
-                    'BIT_DrawClock_SV': None}
+                    'BIT_DrawClock_SV': None,
+                    'BIT_LineC_LS': None, # line cancellation test: number of lines crossed on left side
+                    'BIT_LineC_RS': None, # line cancellation test: number of lines crossed on right side
+                    'BIT_LineC_HCoC': None, # line cancellation test: horizontal centre of cancellation
+                    'BIT_LineC_VCoC': None, # line cancellation test: vertical centre of cancellation
+                    'BIT_LineB_T': None, # line bisection test: score of top line on L or R side
+                    'BIT_LineB_M': None, # line bisection test: score of middle line on L or R side
+                    'BIT_LineB_B': None, # line bisection test: score of bottom line on L or R side
+                    'BIT_LineB_HCoC': None} # line bisection test: horizontal centre of cancellation
+                    
         # iterate through files in pseudonym folder
         for file_name in os.listdir(folder_path):
             file_path = os.path.join(folder_path, file_name)
             if os.path.isfile(file_path):
                 if file_name == "LineC.png":
-                    row_data['BIT_LineC'] = diag_LineC.process_image(file_path)[0]
-                    row_data['BIT_LineC_SV'] = diag_LineC.process_image(file_path)[1]
-                    row_data['BIT_LineC_LS'] = ...
-                    row_data['BIT_LineC_RS'] = ...
+                    row_data['BIT_LineC_LS'], row_data['BIT_LineC_RS'], row_data['BIT_LineC'], row_data['BIT_LineC_SV'], row_data['BIT_LineC_HCoC'], row_data['BIT_LineC_VCoC'] = diag_LineC.process_image(file_path, LineC_T_C1)
                 elif file_name == "LetC.png":
                     row_data['BIT_LetC'] = ...
                     row_data['BIT_LetC_SV'] = ...
@@ -54,8 +70,7 @@ for folder_name in os.listdir(pathname):
                     row_data['BIT_DrawFlower'] = ...
                     row_data['BIT_DrawFlower_SV'] = ...
                 elif file_name == "LineB.png":
-                    row_data['BIT_LineB'] = ...
-                    row_data['BIT_LineB_SV'] = ...
+                    row_data['BIT_LineB_T'], row_data['BIT_LineB_M'], row_data['BIT_LineB_B'], row_data['BIT_LineB'], row_data['BIT_LineB_SV'], row_data['BIT_LineB_HCoC'] = diag_LineB.process_image(file_path)
                 elif file_name == "DrawClock.png":
                     row_data['BIT_DrawClock'] = ...
                     row_data['BIT_DrawClock_SV'] = ...
@@ -64,4 +79,4 @@ for folder_name in os.listdir(pathname):
         data.append(row_data)
 
 df = pd.DataFrame(data)
-df.to_csv(os.path.basename(pathname) + ".csv")
+df.to_csv("patients.csv")
