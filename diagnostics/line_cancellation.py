@@ -9,8 +9,9 @@ def image_acquisition(file_path):
     if img is None:
         sys.exit("Could not read the image.") # make sure image is png, jpg, or jpeg (some other file types could work as well)
 
-    #cv.imshow("Display window", img)
+    #cv.imshow("img", img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("img")
 
     return img
 
@@ -18,14 +19,16 @@ def image_pre_processing(img):
     # grayscale conversion
     gray1 = cv.cvtColor(img, cv.COLOR_BGR2GRAY) # image is now 1-channel
 
-    #cv.imshow("Display window", gray1)
+    #cv.imshow("gray1", gray1)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("gray1")
 
     # thresholding (part 1)
     ret, thresh1 = cv.threshold(gray1, 200, 255, cv.THRESH_BINARY)
 
-    #cv.imshow("Display window", thresh1)
+    #cv.imshow("thresh1", thresh1)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("thresh1")
 
     # edge detection
     lower_threshold = 10 # lower threshold value in Hysteresis Thresholding
@@ -33,34 +36,40 @@ def image_pre_processing(img):
     aperture_size = 3 # aperture size of the Sobel filter
     edges = cv.Canny(thresh1, lower_threshold, upper_threshold, aperture_size)
 
-    #cv.imshow("Display window", edges)
+    #cv.imshow("edges", edges)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("edges")
 
     # noise reduction (part 1)
     blur1 = cv.fastNlMeansDenoising(edges, None, h=25, templateWindowSize=25, searchWindowSize=25)
     
-    #cv.imshow("Display window", blur1)
+    #cv.imshow("blur1", blur1)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("blur1")
 
     # dilation
     element = cv.getStructuringElement(cv.MORPH_ELLIPSE, (5, 5))
     dilated = cv.dilate(blur1, element, iterations=14)
 
-    #cv.imshow("Display window", dilated)
+    #cv.imshow("dilated", dilated)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("dilated")
 
     # erosion
     element = cv.getStructuringElement(cv.MORPH_ELLIPSE, (5, 5))
     eroded = cv.erode(dilated, element, iterations=15)
 
-    #cv.imshow("Display window", eroded)
+    #cv.imshow("eroded", eroded)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("eroded")
 
     # noise reduction (part 2)
     blur2 = cv.fastNlMeansDenoising(eroded, None, h=25, templateWindowSize=25, searchWindowSize=25)
     
-    #cv.imshow("Display window", blur2)
+    #cv.imshow("blur2", blur2)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("blur2")
+
 
     # noise reduction (part 3)
     diameter = 30
@@ -68,14 +77,16 @@ def image_pre_processing(img):
     sigma_space = 30
     blur3 = cv.bilateralFilter(blur2, diameter, sigma_color, sigma_space)
 
-    #cv.imshow("Display window", blur3)
+    #cv.imshow("blur3", blur3)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("blur3")
 
     # thresholding (part 2)
-    ret, thresh2 = cv.threshold(blur3, 127, 255, cv.THRESH_BINARY)
+    ret, thresh2 = cv.threshold(blur3, 150, 255, cv.THRESH_BINARY)
 
-    #cv.imshow("Display window", thresh2)
+    #cv.imshow("thresh2", thresh2)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("thresh2")
 
     pre_processed_img = thresh2
 
@@ -87,8 +98,9 @@ def contour_detection(img, pre_processed_img):
     contour_img = img.copy()
     cv.drawContours(contour_img, contours, -1, (0, 255, 0), 5)
 
-    #cv.imshow("Display window", contour_img)
+    #cv.imshow("contour_img", contour_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("contour_img")
 
     return contour_img, contours
 
@@ -107,7 +119,7 @@ def intersection_detection(contour_img, contours):
             cy = int(M['m01'] / M['m00'])
             distance_to_border = min(cx, cy, width - cx, height - cy)
             if distance_to_border > border_buffer: # avoid border contours caused by scanning
-                if distance_to_border < min_distance_to_border: # isolate arrow centroid
+                if distance_to_border < min_distance_to_border and (((width/2 - 150) < cx < (width/2 + 150)) or ((height/2 - 150) < cy < (height/2 + 150))): # isolate arrow centroid
                     min_distance_to_border = distance_to_border
                     if arrow_centroid is not None:
                         centroids.append([arrow_centroid[0], arrow_centroid[1]])
@@ -118,7 +130,7 @@ def intersection_detection(contour_img, contours):
     # merge intersections
     merged_centroids = []
     centroids_array = np.array(centroids)
-    clustering = DBSCAN(eps=100, min_samples=1).fit(centroids_array) 
+    clustering = DBSCAN(eps=120, min_samples=1).fit(centroids_array) 
     labels = clustering.labels_
     
     for label in set(labels):
@@ -133,8 +145,9 @@ def intersection_detection(contour_img, contours):
         cv.circle(intersection_img, (int(centroid[0]), int(centroid[1])), intersection_thickness, (0, 255, 255), -1)
     cv.circle(intersection_img, arrow_centroid, intersection_thickness, (0, 0, 0), -1)
 
-    #cv.imshow("Display window", intersection_img)
+    #cv.imshow("intersection_img", intersection_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("intersection_img")
     
     return intersection_img, merged_centroids, arrow_centroid
 
@@ -185,8 +198,9 @@ def orient_image(intersection_img, merged_centroids, arrow_centroid):
     angle = rotation_based_on_side(closest_side)
     rotated_img, rotated_centroids = rotate_image_and_centroids(intersection_img, merged_centroids, angle)
 
-    #cv.imshow("Display window", rotated_img)
+    #cv.imshow("rotated_img", rotated_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("rotated_img")
 
     return rotated_img, rotated_centroids
 
@@ -196,12 +210,13 @@ def target_detection(scoring_img, rotated_centroids, LineC_T_C1):
     for centroid in LineC_T_C1:
         cv.circle(superposition_img, (int(centroid[0]), int(centroid[1])), centroid_thickness, (0, 0, 0), -1)
     
-    #cv.imshow("Display window", superposition_img)
+    #cv.imshow("superposition_img", superposition_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("superposition_img")
 
     # determine subset of LineC_T_C1 that are detected
     detected_centroids = []
-    distance_threshold = 125
+    distance_threshold = 100
     for template_centroid in LineC_T_C1:
         for centroid in rotated_centroids:
             distance = np.sqrt((centroid[0] - template_centroid[0])**2 + (centroid[1] - template_centroid[1])**2)
@@ -213,8 +228,9 @@ def target_detection(scoring_img, rotated_centroids, LineC_T_C1):
     for centroid in detected_centroids:
         cv.circle(detected_img, (int(centroid[0]), int(centroid[1])), centroid_thickness, (127, 127, 127), -1)
     
-    #cv.imshow("Display window", detected_img)
+    #cv.imshow("detected_img", detected_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("detected_img")
 
     return detected_img, detected_centroids
 
@@ -228,15 +244,16 @@ def post_processing(rotated_img, rotated_centroids, detected_centroids, LineC_T_
     for centroid in rotated_centroids:
         height, width = rotated_img.shape[:2]
         x, y = centroid
-        if x <= (width/2 - 200):
+        if x <= (width/2 - 150):
             left_centroids.append(centroid)
             cv.circle(scoring_img, (int(centroid[0]), int(centroid[1])), centroid_thickness, (255, 0, 0), -1)
-        elif x >= (width/2 + 200):
+        elif x >= (width/2 + 150):
             right_centroids.append(centroid)
             cv.circle(scoring_img, (int(centroid[0]), int(centroid[1])), centroid_thickness, (0, 0, 255), -1)
     
-    #cv.imshow("Display window", scoring_img)
+    #cv.imshow("scoring_img", scoring_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("scoring_img")
 
     LineC_LS = len(left_centroids)
     LineC_RS = len(right_centroids)
@@ -307,7 +324,8 @@ def process_image(file_path, LineC_T_C1):
     return LineC_LS, LineC_RS, LineC, LineC_SV, LineC_HCoC, LineC_VCoC
 
 #import line_cancellation_template
-#file_path1 = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/Gerke/LineC.png"
-#file_path2 = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/Templates/LineC_T.png"
-#LineC_T_C1 = line_cancellation_template.process_image(file_path2)
-#print(process_image(file_path1, LineC_T_C1))
+#file_path_T = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/templates/LineC_T.png"
+#LineC_T_C1 = line_cancellation_template.process_image(file_path_T)
+#for name in ["Braun", "BW", "Daskalon", "Dotzamer", "Franz", "Gerke", "Jablonski", "Kuhn", "Loffelad", "Malm", "Sigruner", "Theato"]:
+    #file_path = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/" + name + "/LineC.png"
+    #print(process_image(file_path, LineC_T_C1))

@@ -9,8 +9,9 @@ def image_acquisition(file_path):
     if img is None:
         sys.exit("Could not read the image.") # make sure image is png, jpg, or jpeg (some other file types could work as well)
 
-    #cv.imshow("Display window", img)
+    #cv.imshow("img", img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("img")
 
     return img
 
@@ -18,14 +19,16 @@ def image_pre_processing(img):
     # grayscale conversion
     gray1 = cv.cvtColor(img, cv.COLOR_BGR2GRAY) # image is now 1-channel
 
-    #cv.imshow("Display window", gray1)
+    #cv.imshow("gray1", gray1)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("gray1")
 
     # thresholding (part 1)
     ret, thresh1 = cv.threshold(gray1, 127, 255, cv.THRESH_BINARY)
 
-    #cv.imshow("Display window", thresh1)
+    #cv.imshow("thresh1", thresh1)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("thresh1")
 
     # edge detection (part 1)
     lower_threshold = 10 # lower threshold value in Hysteresis Thresholding
@@ -33,27 +36,31 @@ def image_pre_processing(img):
     aperture_size = 3 # aperture size of the Sobel filter
     edges1 = cv.Canny(thresh1, lower_threshold, upper_threshold, aperture_size)
 
-    #cv.imshow("Display window", edges1)
+    #cv.imshow("edges1", edges1)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("edges1")
 
     # noise reduction
     blur = cv.fastNlMeansDenoising(edges1, None, h=30, templateWindowSize=20, searchWindowSize=20)
     
-    #cv.imshow("Display window", blur)
+    #cv.imshow("blur", blur)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("blur")
 
     # dilation (part 1)
     element = cv.getStructuringElement(cv.MORPH_RECT, (33, 33))
     dilated1 = cv.dilate(blur, element, iterations=1)
 
-    #cv.imshow("Display window", dilated1)
+    #cv.imshow("dilated1", dilated1)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("dilated1")
 
     # thresholding (part 2)
     ret, thresh2 = cv.threshold(dilated1, 215, 255, cv.THRESH_BINARY)
 
-    #cv.imshow("Display window", thresh2)
+    #cv.imshow("thresh2", thresh2)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("thresh2")
 
     # edge detection (part 2)
     lower_threshold = 300 # lower threshold value in Hysteresis Thresholding
@@ -61,21 +68,24 @@ def image_pre_processing(img):
     aperture_size = 3 # aperture size of the Sobel filter
     edges2 = cv.Canny(thresh2, lower_threshold, upper_threshold, aperture_size)
 
-    #cv.imshow("Display window", edges2)
+    #cv.imshow("edges2", edges2)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("edges2")
 
     # dilation (part 2)
     element = cv.getStructuringElement(cv.MORPH_RECT, (5, 5))
     dilated2 = cv.dilate(edges2, element, iterations=1)
 
-    #cv.imshow("Display window", dilated2)
+    #cv.imshow("dilated2", dilated2)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("dilated2")
 
     # thresholding (part 3)
     ret, thresh3 = cv.threshold(dilated2, 10, 255, cv.THRESH_BINARY)
 
-    #cv.imshow("Display window", thresh3)
+    #cv.imshow("thresh3", thresh3)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("thresh3")
 
     pre_processed_img = thresh3
 
@@ -87,8 +97,9 @@ def contour_detection(img, pre_processed_img):
     contour_img = img.copy()
     cv.drawContours(contour_img, contours, -1, (0, 255, 0), 5)
 
-    #cv.imshow("Display window", contour_img)
+    #cv.imshow("contour_img", contour_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("contour_img")
 
     return contour_img, contours
 
@@ -100,10 +111,18 @@ def contour_processing(img, contours):
         cx = int(M["m10"] / M["m00"])
         cy = int(M["m01"] / M["m00"])
         centroids.append((cx, cy))
+    
+    centroid_img = img.copy()
+    for centroid in centroids:
+        cv.circle(centroid_img, centroid, 8, (0, 0, 255), -1)
+
+    #cv.imshow("centroid_img", centroid_img)
+    #k = cv.waitKey(0)
+    #cv.destroyWindow("centroid_img")
 
     # merge contours based on centroid proximity
     merged_contours = []
-    distance_threshold = 200
+    distance_threshold = 75
     processed = np.zeros(len(contours), dtype=bool) # boolean array to keep track of which contours have already been placed in a group
     for i, centroid in enumerate(centroids):
         if not processed[i]:
@@ -112,6 +131,14 @@ def contour_processing(img, contours):
             processed[group] = True
             merged_contour = np.vstack([contours[j] for j in group]) # append all members of group into single contour
             merged_contours.append(merged_contour)
+    
+    merged_contour_img = img.copy()
+    for merged_contour in merged_contours:
+        cv.drawContours(merged_contour_img, merged_contour, -1, (255, 0, 0), 5)
+
+    #cv.imshow("merged_contour_img", merged_contour_img)
+    #k = cv.waitKey(0)
+    #cv.destroyWindow("merged_contour_img")
 
     # filter contours to remove noise contours
     filtered_contours = []
@@ -128,21 +155,22 @@ def contour_processing(img, contours):
             cy = int(M['m01'] / M['m00'])
             distance_to_border = min(cx, cy, width - cx, height - cy)
             if distance_to_border > border_buffer: # avoid border contours caused by scanning
-                if distance_to_border < min_distance_to_border and area < 5000: # isolate arrow contour
+                if distance_to_border < min_distance_to_border and area < 5000 and (((width/2 - 150) < cx < (width/2 + 150)) or ((height/2 - 150) < cy < (height/2 + 150))): # isolate arrow contour
                     min_distance_to_border = distance_to_border
                     if arrow_contour is not None:
                         filtered_contours.append(arrow_contour)
                     arrow_contour = contour
                 else:
-                    if distance_to_border > 5 * border_buffer and area > 5000: # isolate line contours
+                    if distance_to_border > (5 * border_buffer) and area > 12000: # isolate line contours
                         filtered_contours.append(contour)
 
     filtered_contour_img = img.copy()
     cv.drawContours(filtered_contour_img, filtered_contours, -1, (0, 255, 0), 5)
     cv.drawContours(filtered_contour_img, arrow_contour, -1, (0, 0, 0), 5)
     
-    #cv.imshow("Display window", filtered_contour_img)
+    #cv.imshow("filtered_contour_img", filtered_contour_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("filtered_contour_img")    
 
     # reduce contour shape complexity
     processed_contours = []
@@ -155,8 +183,9 @@ def contour_processing(img, contours):
     cv.drawContours(processed_contour_img, processed_contours, -1, (255, 0, 0), 5)
     cv.drawContours(processed_contour_img, arrow_contour, -1, (0, 0, 0), 5)
     
-    #cv.imshow("Display window", processed_contour_img)
+    #cv.imshow("processed_contour_img", processed_contour_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("processed_contour_img")
 
     return processed_contour_img, processed_contours, arrow_contour
 
@@ -215,8 +244,9 @@ def orient_image(img, processed_contours, arrow_contour):
     angle = rotation_based_on_side(closest_side)
     rotated_img, rotated_contours = rotate_image_and_contours(img, processed_contours, angle)
 
-    #cv.imshow("Display window", rotated_img)
+    #cv.imshow("rotated_img", rotated_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("rotated_img")
 
     return rotated_img, rotated_contours
 
@@ -243,31 +273,45 @@ def bisection_processing(rotated_img, rotated_contours):
             for extreme_point in side:
                 cv.circle(extreme_points_img, extreme_point, extreme_point_thickness, (0, 0, 255), -1)
 
-    #cv.imshow("Display window", extreme_points_img)
+    #cv.imshow("extreme_points_img", extreme_points_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("extreme_points_img")
 
     # split up each set of extreme points into three groups (left, bisection, right) and find representative point
     final_groups = []
     for extreme_points in all_extreme_points:
         flattened_extreme_points = [extreme_point for side in extreme_points for extreme_point in side]
-        
-        clustering = DBSCAN(eps=300, min_samples=2).fit(flattened_extreme_points) 
+            
+        clustering = DBSCAN(eps=100, min_samples=2).fit(flattened_extreme_points) 
         labels = clustering.labels_
-
+            
         # separate points into groups
-        grouped_points = {i: [] for i in range(max(labels)+1)}
+        grouped_points = {}
         for label, point in zip(labels, flattened_extreme_points):
             if label != -1: # ignore noise points
+                if label not in grouped_points:
+                    grouped_points[label] = []
                 grouped_points[label].append(point)
 
-        sorted_groups = sorted(list(grouped_points.values()), key=lambda group: np.mean([point[0] for point in group])) # sort groups by their mean x coordinate 
-        mean_points = {position: np.mean(group, axis=0) for position, group in zip(["left", "bisection", "right"], sorted_groups)} # calculate mean point for each group
-        
-        # set bisection y-value more accurately
-        mean_y = int((mean_points["left"][1] + mean_points["right"][1]) / 2)
-        mean_points["bisection"][1] = mean_y
+        group_info = {i: (len(group), np.mean(group, axis=0)) for i, group in grouped_points.items()}
 
-        final_groups.append(mean_points)
+        sorted_groups = sorted(group_info, key=lambda x: group_info[x][1][0]) # sort groups by their mean x coordinate 
+
+        # assign group names
+        if len(group_info) == 3:
+            bisection_index = sorted_groups[1]
+        else:
+            bisection_index = max(sorted_groups[1:-1], key=lambda x: group_info[x][0])
+        
+        final_mean_points = {"left": group_info[sorted_groups[0]][1],
+                             "bisection": group_info[bisection_index][1],
+                             "right": group_info[sorted_groups[-1]][1]}
+
+        # set bisection y-value more accurately
+        mean_y = int((final_mean_points["left"][1] + final_mean_points["right"][1]) / 2)
+        final_mean_points["bisection"] = np.array([final_mean_points["bisection"][0], mean_y])
+
+        final_groups.append(final_mean_points)
 
     final_groups = sorted(final_groups, key=lambda group: group["bisection"][1]) # sort final groups by the y coordinate of their bisection
 
@@ -278,8 +322,9 @@ def bisection_processing(rotated_img, rotated_contours):
             x, y = cross[position].astype(int)
             cv.line(bisection_img, (x, y - size), (x, y + size), colour, line_thickness)
     
-    #cv.imshow("Display window", bisection_img)
+    #cv.imshow("bisection_img", bisection_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("bisection_img")
 
     return bisection_img, final_groups
 
@@ -332,8 +377,9 @@ def post_processing(bisection_img, final_groups):
             for x, y in ranges[range]:
                 cv.line(scoring_img, (x, y - 15), (x, y + 15), (0, 0, 0), line_thickness)
     
-    #cv.imshow("Display window", scoring_img)
+    #cv.imshow("scoring_img", scoring_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("scoring_img")
 
     LineB = LineB_T[0] + LineB_M[0] + LineB_B[0]
     
@@ -390,5 +436,6 @@ def process_image(file_path):
     LineB_T, LineB_M, LineB_B, LineB, LineB_SV, LineB_HCoC = post_processing(bisection_img, final_groups)
     return LineB_T, LineB_M, LineB_B, LineB, LineB_SV, LineB_HCoC
 
-#file_path = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/Braun/LineB.png"
-#print(process_image(file_path))
+#for name in ["Braun", "Daskalon", "Dotzamer", "Franz", "Jablonski", "Kuhn", "Loffelad", "Malm", "Sigruner", "Theato"]:
+    #file_path = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/" + name + "/LineB.png"
+    #print(process_image(file_path))

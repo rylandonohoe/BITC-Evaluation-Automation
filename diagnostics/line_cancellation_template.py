@@ -9,8 +9,9 @@ def image_acquisition(file_path):
     if img is None:
         sys.exit("Could not read the image.") # make sure image is png, jpg, or jpeg (some other file types could work as well)
 
-    #cv.imshow("Display window", img)
+    #cv.imshow("img", img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("img")
 
     return img
 
@@ -18,14 +19,16 @@ def image_pre_processing(img):
     # grayscale conversion
     gray1 = cv.cvtColor(img, cv.COLOR_BGR2GRAY) # image is now 1-channel
 
-    #cv.imshow("Display window", gray1)
+    #cv.imshow("gray1", gray1)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("gray1")
 
     # thresholding (part 1)
     ret, thresh1 = cv.threshold(gray1, 127, 255, cv.THRESH_BINARY)
 
-    #cv.imshow("Display window", thresh1)
+    #cv.imshow("thresh1", thresh1)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("thresh1")
 
     # edge detection (part 1)
     lower_threshold = 25 # lower threshold value in Hysteresis Thresholding
@@ -33,27 +36,31 @@ def image_pre_processing(img):
     aperture_size = 3 # aperture size of the Sobel filter
     edges1 = cv.Canny(thresh1, lower_threshold, upper_threshold, aperture_size)
 
-    #cv.imshow("Display window", edges1)
+    #cv.imshow("edges1", edges1)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("edges1")
 
     # noise reduction (part 1)
     blur1 = cv.fastNlMeansDenoising(edges1, None, h=20, templateWindowSize=25, searchWindowSize=25)
     
-    #cv.imshow("Display window", blur1)
+    #cv.imshow("blur1", blur1)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("blur1")
 
     # dilation (part 1)
     element = cv.getStructuringElement(cv.MORPH_RECT, (9, 9))
     dilated1 = cv.dilate(blur1, element, iterations=1)
 
-    #cv.imshow("Display window", dilated1)
+    #cv.imshow("dilated1", dilated1)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("dilated1")
 
     # thresholding (part 2)
     ret, thresh2 = cv.threshold(dilated1, 127, 255, cv.THRESH_BINARY)
 
-    #cv.imshow("Display window", thresh2)
+    #cv.imshow("thresh2", thresh2)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("thresh2")
 
     # edge detection (part 2)
     lower_threshold = 300 # lower threshold value in Hysteresis Thresholding
@@ -61,21 +68,24 @@ def image_pre_processing(img):
     aperture_size = 3 # aperture size of the Sobel filter
     edges2 = cv.Canny(thresh2, lower_threshold, upper_threshold, aperture_size)
 
-    #cv.imshow("Display window", edges2)
+    #cv.imshow("edges2", edges2)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("edges2")
 
     # dilation (part 2)
     element = cv.getStructuringElement(cv.MORPH_RECT, (5, 5))
     dilated2 = cv.dilate(edges2, element, iterations=1)
 
-    #cv.imshow("Display window", dilated2)
+    #cv.imshow("dilated2", dilated2)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("dilated2")
 
     # thresholding (part 3)
     ret, thresh3 = cv.threshold(dilated2, 10, 255, cv.THRESH_BINARY)
 
-    #cv.imshow("Display window", thresh3)
+    #cv.imshow("thresh3", thresh3)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("thresh3")
 
     pre_processed_img = thresh3
 
@@ -87,8 +97,9 @@ def contour_detection(img, pre_processed_img):
     contour_img = img.copy()
     cv.drawContours(contour_img, contours, -1, (0, 255, 0), 5)
 
-    #cv.imshow("Display window", contour_img)
+    #cv.imshow("contour_img", contour_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("contour_img")
 
     return contour_img, contours
 
@@ -132,8 +143,9 @@ def centroid_detection(img, contours):
         cv.circle(centroid_img, (int(centroid[0]), int(centroid[1])), centroid_thickness, (0, 0, 255), -1)
     cv.circle(centroid_img, arrow_centroid, centroid_thickness, (0, 0, 0), -1)
 
-    #cv.imshow("Display window", centroid_img)
+    #cv.imshow("centroid_img", centroid_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("centroid_img")
 
     return centroid_img, merged_centroids, arrow_centroid
 
@@ -184,8 +196,9 @@ def orient_image(centroid_img, merged_centroids, arrow_centroid):
     angle = rotation_based_on_side(closest_side)
     rotated_img, rotated_centroids = rotate_image_and_centroids(centroid_img, merged_centroids, angle)
     
-    #cv.imshow("Display window", rotated_img)
+    #cv.imshow("rotated_img", rotated_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("rotated_img")
 
     # remove the centre four centroids from the final list (keeping them in simply makes the values less sensitive relative to one another)
     LineC_T_C1 = []
@@ -200,8 +213,9 @@ def orient_image(centroid_img, merged_centroids, arrow_centroid):
     for centroid in LineC_T_C1:
             cv.circle(CoC_target_img, (int(centroid[0]), int(centroid[1])), centroid_thickness, (0, 0, 0), -1)
 
-    #cv.imshow("Display window", CoC_target_img)
+    #cv.imshow("CoC_target_img", CoC_target_img)
     #k = cv.waitKey(0)
+    #cv.destroyWindow("CoC_target_img")
 
     return CoC_target_img, LineC_T_C1
 
