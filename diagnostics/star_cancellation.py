@@ -89,7 +89,7 @@ def image_pre_processing(img):
 
     return pre_processed_img
 
-
+# use contour / convex hull area?
 
 def process_image(file_path):
     img = image_acquisition(file_path)
@@ -97,9 +97,9 @@ def process_image(file_path):
 
 
 
-    return StarC_C1, StarC_C2, StarC_C3, StarC_C4, StarC_C5, StarC_C6, StarC, StarC_SV, StarC_HCoC, StarC_VCoC
+    #return StarC_C1, StarC_C2, StarC_C3, StarC_C4, StarC_C5, StarC_C6, StarC, StarC_SV, StarC_HCoC, StarC_VCoC
 
 
 
-#file_path = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/Dotzamer/StarC.png"
-#print(process_image(file_path))
+file_path = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/Dotzamer/StarC.png"
+print(process_image(file_path))

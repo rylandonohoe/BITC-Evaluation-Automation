@@ -70,7 +70,6 @@ def image_pre_processing(img):
     #k = cv.waitKey(0)
     #cv.destroyWindow("blur2")
 
-
     # noise reduction (part 3)
     diameter = 30
     sigma_color = 100
@@ -284,7 +283,7 @@ def post_processing(rotated_img, rotated_centroids, detected_centroids, LineC_T_
 
     LineC_SV = None
     for interval, standard_value in mapping.items():
-        if len(interval) == 2: 
+        if len(interval) == 2:
             if interval[0] <= LineC <= interval[1]:
                 LineC_SV = standard_value
                 break

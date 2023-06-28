@@ -144,24 +144,69 @@ def line_processing(resized, formatted_lines):
     return filtered_line_img, filtered_lines
 
 def ideal_diamond(line_img, formatted_lines):
-    # find corners
+    # find top and bottom corners of ideal diamond
     top = formatted_lines[0][0]
-    right = formatted_lines[0][0]
     bottom = formatted_lines[0][0]
-    left = formatted_lines[0][0]
 
     for line in formatted_lines:
         for point in line:
             x, y = point
-            if y > top[1]:
+            if y < top[1]:
                 top = point
-            if x > right[0]:
-                right = point
-            if y < bottom[1]:
+            if y > bottom[1]:
                 bottom = point
-            if x < left[0]:
-                left = point
+    
+    # find left and right corners of ideal diamond
+    height, width = line_img.shape[:2]
 
+    # divide image into upper and lower rois
+    roi_top = [(0, top[1]), (width, int(0.6 * (bottom[1] - top[1]) + top[1]))]
+    roi_bottom = [(0, int(0.4 * (bottom[1] - top[1]) + top[1])), (width, bottom[1])]
+    
+    def find_roi_extremes(roi, formatted_lines):
+        left = None
+        right = None
+        for line in formatted_lines:
+            for point in line:
+                x, y = point
+                if roi[0][1] <= y <= roi[1][1]: # if point is inside the roi
+                    if left is None or x < left[0]:
+                        left = point
+                    if right is None or x > right[0]:
+                        right = point
+        return left, right
+
+    # find the leftmost and rightmost points in both rois
+    left_top, right_top = find_roi_extremes(roi_top, formatted_lines)
+    left_bottom, right_bottom = find_roi_extremes(roi_bottom, formatted_lines)
+
+    # if the leftmost or rightmost points in both rois are not the same, calculate the intersection of their lines
+    def line_intersection(line1, line2):
+        x_diff = (line1[0][0] - line1[1][0], line2[0][0] - line2[1][0])
+        y_diff = (line1[0][1] - line1[1][1], line2[0][1] - line2[1][1])
+
+        def det(a, b):
+            return a[0] * b[1] - a[1] * b[0]
+
+        denominator = det(x_diff, y_diff)
+
+        if denominator != 0:
+            d = (det(*line1), det(*line2))
+            x = int(det(d, x_diff) / denominator)
+            y = int(det(d, y_diff) / denominator)
+        
+        return x, y
+
+    if left_top != left_bottom:
+        left = line_intersection((top, left_top), (bottom, left_bottom))
+    else:
+        left = left_top
+
+    if right_top != right_bottom:
+        right = line_intersection((top, right_top), (bottom, right_bottom))
+    else:
+        right = right_top
+    
     corners = [top, right, bottom, left]
 
     # draw corners
