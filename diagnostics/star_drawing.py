@@ -359,6 +359,6 @@ def process_image(file_path):
     DrawStar_F, DrawStar_D, DrawStar_A, DrawStar, DrawStar_SV = post_processing(sorted_corners, valid_lines)
     return DrawStar_F, DrawStar_D, DrawStar_A, DrawStar, DrawStar_SV
 
-#for name in ["Braun", "BW", "Daskalon", "Dotzamer", "Franz", "Gerke", "Kuhn", "Loffelad", "Sigruner"]:
+#for name in ["Braun", "BW", "Daskalon", "Franz", "Gerke", "Kuhn", "Loffelad", "Sigruner"]:
     #file_path = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/" + name + "/Draw.png"
     #print(process_image(file_path))

@@ -388,6 +388,6 @@ def process_image(file_path):
     DrawDiamond_F, DrawDiamond_D, DrawDiamond_A, DrawDiamond, DrawDiamond_SV = post_processing(corners, valid_lines)
     return DrawDiamond_F, DrawDiamond_D, DrawDiamond_A, DrawDiamond, DrawDiamond_SV
 
-#for name in ["Braun", "BW", "Daskalon", "Dotzamer", "Franz", "Gerke", "Kuhn", "Loffelad", "Sigruner"]:
+#for name in ["Braun", "BW", "Daskalon", "Franz", "Gerke", "Kuhn", "Loffelad", "Sigruner"]:
     #file_path = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/" + name + "/Draw.png"
     #print(process_image(file_path))

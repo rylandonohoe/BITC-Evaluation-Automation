@@ -410,6 +410,9 @@ def letter_cancellation_detection(processed_Es_and_Rs):
         
         height, width = letter_img.shape[:2]
         
+        # first check: contour proximity to border
+        flag = False
+
         # noise reduction
         blur = cv.medianBlur(letter_img, 3)
 
@@ -452,7 +455,6 @@ def letter_cancellation_detection(processed_Es_and_Rs):
         #k = cv.waitKey(0)
         #cv.destroyWindow("contour_img")
         
-        flag = False
         centroids = []
         for j, contour in enumerate(contours):
             # check if contour is near the border which definitively means the letter was crossed
@@ -460,7 +462,7 @@ def letter_cancellation_detection(processed_Es_and_Rs):
             if ((letter == 'E' and (0 <= y <= 28 or height - 28 <= y + h <= height)) or (letter == 'R' and (0 <= y <= 30 or height - 25 <= y + h <= height))):
                 flag = True
             
-            # check if contour has a child contour (hole)
+            # second check: presence of child contours (holes)
             elif hierarchy[0][j][2] != -1:
                 child_contour = contours[hierarchy[0][j][2]]
                 area = cv.contourArea(child_contour)
@@ -481,43 +483,22 @@ def letter_cancellation_detection(processed_Es_and_Rs):
                             centroids.append((cx, cy))
                             cv.drawContours(contour_img, [child_contour], -1, (255, 0, 0), 1)
 
-        # check for diagonal line
+        # third check: presence of diagonal line
         if not flag:
             if letter == 'E':
                 rois = [edges[int(height/4):int(3*height/4), int(width/4):int(3*width/4)]]
-            elif letter == 'R':
-                roi1 = edges[int(height/2):int(3*height/4), int(width/4):int(2*width/3)]
-                roi2 = edges[int(height/4):int(height/2), int(width/3):int(2*width/3)]
-                rois = [roi1, roi2]
-            
-            for roi in rois:
-                # find lines
-                lines = cv.HoughLinesP(roi, 1, np.pi/180, threshold=10, minLineLength=10, maxLineGap=3)
-
-                if lines is not None:
-                    for line in lines:
-                        x1, y1, x2, y2 = line[0]
-                        if x2 - x1 != 0:
-                            slope = (y2 - y1) / (x2 - x1)
-                            if ((letter == 'E' and -2.0 <= slope <= -0.5) or (letter == 'R' and -4.0 <= slope <= -0.5)): # check if slope is within range
-                                flag = True
-                                cv.line(contour_img, (x1 + int(width/4), y1 + int(height/4)), (x2 + int(width/4), y2 + int(height/4)), (0, 255, 0), 2)
-                                break
-        
-        # check for diagonal line
-        if not flag:
-            if letter == 'E':
-                rois = edges[int(height/4):int(3*height/4), int(width/4):int(3*width/4)]
+                minLineLength = 10
                 line_offset = [(int(width/4), int(height/4))]
             elif letter == 'R':
                 roi1 = edges[int(height/2):int(3*height/4), int(width/4):int(2*width/3)]
                 roi2 = edges[int(height/4):int(height/2), int(width/3):int(2*width/3)]
                 rois = [roi1, roi2]
+                minLineLength = 9
                 line_offset = [(int(width/4), int(height/2)), (int(width/3), int(height/4))]
                 
             for k, roi in enumerate(rois):
                 # find lines
-                lines = cv.HoughLinesP(roi, 1, np.pi/180, threshold=10, minLineLength=9, maxLineGap=3)
+                lines = cv.HoughLinesP(roi, 1, np.pi/180, threshold=10, minLineLength=minLineLength, maxLineGap=3)
 
                 if lines is not None:
                     for line in lines:

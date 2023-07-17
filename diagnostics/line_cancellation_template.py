@@ -1,7 +1,7 @@
 import cv2 as cv
 import numpy as np
-import sys
 from sklearn.cluster import DBSCAN
+import sys
 
 def image_acquisition(file_path):
     img = cv.imread(cv.samples.findFile(file_path))

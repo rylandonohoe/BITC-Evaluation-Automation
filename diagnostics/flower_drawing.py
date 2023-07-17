@@ -1,6 +1,5 @@
 import cv2 as cv
 import numpy as np
-from sklearn.cluster import DBSCAN
 import sys
 
 def image_acquisition(file_path):
@@ -44,9 +43,9 @@ def image_pre_processing(resized):
 
 def corner_detection(resized, pre_processed_img):
     # corner detection
-    blockSize = 30 # size of neighbourhood considered for corner detection
-    kSize = 25 # aperture parameter of the Sobel derivative used
-    k = 0.15 # Harris detector free parameter in the equation
+    blockSize = 50 # size of neighbourhood considered for corner detection
+    kSize = 15 # aperture parameter of the Sobel derivative used
+    k = 0.2 # Harris detector free parameter in the equation
     dst = cv.cornerHarris(pre_processed_img, blockSize, kSize, k)
     corners = np.where(dst > 0.02 * dst.max())
     
@@ -72,6 +71,6 @@ def process_image(file_path):
 
 
 
-for name in ["Braun", "BW", "Daskalon", "Dotzamer", "Franz", "Gerke", "Kuhn", "Loffelad", "Sigruner"]:
+for name in ["Braun", "BW", "Daskalon", "Franz", "Gerke", "Kuhn", "Loffelad", "Sigruner"]:
     file_path = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/" + name + "/Draw.png"
     print(process_image(file_path))
