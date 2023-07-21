@@ -2,7 +2,7 @@
 
 ## 1. Line Cancellation Task
 
-### Task description:
+### Overview:
 Patients are required to detect and cross out all target lines on a page. When administering the test, the examiner demonstrates the nature of the task to the patient by crossing out two of the four lines located in the central column. The patient is then instructed to cross out all the lines they can see on the page. After the patient completes the task, the number of crossed-out lines not in the central column are counted. The maximum score is 36 (18 left, 18 right). Refer to templates/LineC_T.png or templates/LineC_T.pdf for a template of the task.
 
 ### diagnostics/line_cancellation_template.py description:
@@ -13,7 +13,7 @@ A scan of the patient's completed line cancellation task is read and heavily pre
 
 ## 2. Letter Cancellation Task
 
-### Task description:
+### Overview:
 Patients are required to detect and cross out all Es and Rs within a rectangular block of text on a page. After the patient completes the task, the number of crossed-out Es and Rs are counted. The maxmimum score is 40 (20 left, 20 right). Refer to templates/LetC_T.png or templates/LetC_T.pdf for a template of the task.
 
 ### diagnostics/letter_cancellation.py description:
@@ -21,5 +21,8 @@ A scan of the patient's completed letter cancellation task is read and preproces
 
 ## 3. Star Cancellation Task
 
-### Task description:
+### Overview:
+Patients are required to detect and cross out all small stars on a page strewn with small stars, big stars, and letters. After the patient completes the task, the number of crossed-out small stars are counted, not including the two small stars in the central column. The maximum score is 54 (27 left, 27 right). Refer to templates/StarC_T.png or templates/StarC_T.pdf for a template of the task.
+
+### diagnostics/star_cancellation.py description:
 ...
