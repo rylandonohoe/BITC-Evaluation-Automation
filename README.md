@@ -1,15 +1,26 @@
 # BIT-Screening-Automation
 
-## 1. Line Cancellation Task
+## Description
 
 ### Overview:
-Patients are required to detect and cross out all target lines on a page. When administering the test, the examiner demonstrates the nature of the task to the patient by crossing out two of the four lines located in the central column. The patient is then instructed to cross out all the lines they can see on the page. After the patient completes the task, the number of crossed-out lines not in the central column are counted. The maximum score is 36 (18 left, 18 right). Refer to templates/LineC_T.png or templates/LineC_T.pdf for a template of the task.
+The Behavioural Inattention Test (BIT) is a battery of tasks used to screen for unilateral neglect in stroke patients. The BIT Conventional subtest (BITC) consists of 6 tasks: line crossing, letter cancellation, star cancellation, figure and shape copying, line bisection, and representational drawing. This paper-pen test currently requires tedious manual scoring. Certain metrics, such as the horizontal and vertical centres of cancellation, can be especially time-consuming to determine using only a ruler and calculator. Others, like the form, detail, and arrangement scores for the figure and shape copying task, rely on somewhat subjective scoring criteria that can lead to inconsistent scoring across evaluators. This project seeks to streamline and standardize this process by using computer vision techniques to automate the evaluation of the first 5 tasks of the BITC.
 
-### diagnostics/line_cancellation_template.py description:
-A scan of the template for the line cancellation task (templates/LineC_T.png) is read and preprocessed to reduce noise and emphasize target lines. The centroid coordinates of relevant detected contours are stored and carefully merged to remove instances of target lines being represented by more than one centroid. The arrow centroid is also isolated and subsequently used to orient the image. The centroids of the four lines in the central column are removed from the final list of centroid coordinates. The constant variable, LineC_T_C1, stores this final list of centroid coordinates (i.e., the centres of each target line) and is passed on to line_cancellation.py.
+### Installation:
+This project requires Python 3.10+ and 5 Python libraries: NumPy, OpenCV, pandas, scikit-image, and scikit-learn. After installing the necessary libraries, git clone this repository to your local machine.
 
-### diagnostics/line_cancellation.py description:
-A scan of the patient's completed line cancellation task is read and heavily preprocessed to emphasize line intersection points. Once again, the centroid coordinates of relevant detected contours are stored and carefully merged to remove instances of line intersection points being represented by more than one centroid. The arrow centroid is again isolated and used to orient the image. The centroid coordinates are then cross-referenced against LineC_T_C1 to determine which target lines were detected. The target lines are post-processed to determine the number of crossed-out lines on the left and right sides (LineC_LS, LineC_RS), the total number of crossed-out lines and its corresponding standard value (LineC, LineC_SV), and the resulting horizontal and vertical centres of cancellation (LineC_HCoC, LineC_VCoC).
+### Usage:
+...
+
+## 1. Line Crossing Task
+
+### Overview:
+Patients are required to detect and cross out all target lines on a page. The examiner demonstrates the task by crossing out two of the four lines located in the central column. The patient is then instructed to cross out all the lines they can see on the page. After the patient completes the task, the number of crossed-out lines not in the central column are counted. The maximum score is 36 (18 left, 18 right). Refer to templates/LineC_T.png or templates/LineC_T.pdf for a template of the task.
+
+### diagnostics/line_crossing_template.py description:
+A scan of the template for the line crossing task (templates/LineC_T.png) is read and preprocessed to reduce noise and emphasize target lines. The centroid coordinates of relevant detected contours are stored and carefully merged to remove instances of target lines being represented by more than one centroid. The arrow centroid is also isolated and subsequently used to orient the image. The centroids of the four lines in the central column are removed from the final list of centroid coordinates. The constant variable, LineC_T_C1, stores this final list of centroid coordinates (i.e., the centres of each target line) and is passed on to line_crossing.py.
+
+### diagnostics/line_crossing.py description:
+A scan of the patient's completed line crossing task is read and heavily preprocessed to emphasize line intersection points. Once again, the centroid coordinates of relevant detected contours are stored and carefully merged to remove instances of line intersection points being represented by more than one centroid. The arrow centroid is again isolated and used to orient the image. The centroid coordinates are then cross-referenced against LineC_T_C1 to determine which target lines were detected. The target lines are post-processed to determine the number of crossed-out lines on the left and right sides (LineC_LS, LineC_RS), the total number of crossed-out lines and its corresponding standard value (LineC, LineC_SV), and the resulting horizontal and vertical centres of cancellation (LineC_HCoC, LineC_VCoC).
 
 ## 2. Letter Cancellation Task
 
@@ -27,7 +38,7 @@ Patients are required to detect and cross out all small stars on a page strewn w
 ### diagnostics/star_cancellation.py description:
 A scan of the patient's completed star cancellation task is read and preprocessed to reduce noise and erode the white background. The arrow contour is isolated among all detected contours and its centroid is used to orient the image. The image is then cropped based on the centroid of the rotated arrow contour to narrow in on the ROI. The ROI is precisely isolated by detecting four points that can be consistently identified across all patient scans and using them to apply a perspective transform onto a standardized image size. The coordinates of the target points used to define the perspective transform matrix were manually determined from templates/StarC_T_cropped.png (i.e., the ROI of templates/StarC_T.png). The coordinates of the 54 small stars were also manually determined from templates/StarC_T_cropped.png and used to isolate each small star within its own small image. These images are processed to remove as many irrelevant contours as possible and to rotate and centre the small star to standardize its orientation and position. The contours, skeleton, corners, slant, and other morphological features of each image are then used to determine which small stars were detected by the patient. The target stars are post-processed to determine the number of crossed-out small stars on the left and right sides (StarC_LS, StarC_RS), the total number of crossed-out small stars and its corresponding standard value (StarC, StarC_SV), and the resulting horizontal and vertical centres of cancellation (StarC_HCoC, StarC_VCoC).
 
-## 4. Drawing Tasks
+## 4. Figure and Shape Copying Task
 
 ### Overview:
 ...
@@ -41,7 +52,7 @@ A scan of the patient's completed star cancellation task is read and preprocesse
 ### diagnostics/flower_drawing.py description:
 ...
 
-## 5. Line Biseection Task
+## 5. Line Bisection Task
 
 ### Overview
 Patients are required to bisect three horizontal lines on a page. After the patient completes the task, the deviation of the patient's subjective centre from the actual centre of each line is objectively evaluated. The maximum score is 9 (3 per line). Refer to templates/LineB_T.png or templates/LineB_T.pdf for a template of the task.
