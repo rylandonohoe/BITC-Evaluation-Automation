@@ -27,7 +27,24 @@ Patients are required to detect and cross out all small stars on a page strewn w
 ### diagnostics/star_cancellation.py description:
 A scan of the patient's completed star cancellation task is read and preprocessed to reduce noise and erode the white background. The arrow contour is isolated among all detected contours and its centroid is used to orient the image. The image is then cropped based on the centroid of the rotated arrow contour to narrow in on the ROI. The ROI is precisely isolated by detecting four points that can be consistently identified across all patient scans and using them to apply a perspective transform onto a standardized image size. The coordinates of the target points used to define the perspective transform matrix were manually determined from templates/StarC_T_cropped.png (i.e., the ROI of templates/StarC_T.png). The coordinates of the 54 small stars were also manually determined from templates/StarC_T_cropped.png and used to isolate each small star within its own small image. These images are processed to remove as many irrelevant contours as possible and to rotate and centre the small star to standardize its orientation and position. The contours, skeleton, corners, slant, and other morphological features of each image are then used to determine which small stars were detected by the patient. The target stars are post-processed to determine the number of crossed-out small stars on the left and right sides (StarC_LS, StarC_RS), the total number of crossed-out small stars and its corresponding standard value (StarC, StarC_SV), and the resulting horizontal and vertical centres of cancellation (StarC_HCoC, StarC_VCoC).
 
-## 4. Line Bisection Task
+## 4. Drawing Tasks
 
 ### Overview:
+...
+
+### diagnostics/star_drawing.py description:
+...
+
+### diagnostics/diamond_drawing.py description:
+...
+
+### diagnostics/flower_drawing.py description:
+...
+
+## 5. Line Biseection Task
+
+### Overview
+Patients are required to bisect three horizontal lines on a page. After the patient completes the task, the deviation of the patient's subjective centre from the actual centre of each line is objectively evaluated. The maximum score is 9 (3 per line). Refer to templates/LineB_T.png or templates/LineB_T.pdf for a template of the task.
+
+### diagnostics/line_bisection.py description:
 ...
