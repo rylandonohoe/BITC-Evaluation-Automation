@@ -9,7 +9,7 @@ The Behavioural Inattention Test (BIT) is a battery of tasks used to screen for 
 This project requires Python 3.10+ and 5 Python libraries: NumPy, OpenCV, pandas, scikit-image, and scikit-learn. After installing the necessary libraries, git clone this repository to your local machine.
 
 ### Components:
-In the cloned BIT-Screening-Automation directory, there are three main subdirectories: diagnostics, templates, and patients.  
+In the cloned BIT-Screening-Automation directory, there are three main subdirectories: diagnostics, templates, and patients.<br/>
 (1) The diagnostics subdirectory contains the 8 Python files that do the automatic scoring of the 5 tasks: line_crossing_template.py, line_crossing.py, letter_cancellation.py, star_cancellation.py, star_copying.py, diamond_copying.py, flower_copying.py, and line_bisection.py. Take a look at these files if you wish to understand the scoring process or adjust any of the thresholds. See below for a written description of each of the tasks and their corresponding Python scripts.<br/>
 (2) The templates subdirectory contains a png and pdf version of the template for each of the five tasks. Assess patients using printed copies of these templates for optimal program performance. Note: the StarC_T_Cropped.png and StarC_T_Cropped.pdf are not to be printed out for patient use (cf. StarC_T.png and StarC_T.pdf); they were used for manually determining constants needed for the star_cancellation.py script. Refer to the diagnostics/star_cancellation.py description below for more information.<br/>
 (3) The patients subdirectory is to be filled in by you and will contain all of the raw scans that are to be automatically evaluated. Refer to step 1 of Usage below for more guidance.<br/>
