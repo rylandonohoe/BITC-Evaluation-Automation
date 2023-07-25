@@ -40,6 +40,11 @@ Patients are required to detect and cross out all Es and Rs within a rectangular
 #### diagnostics/letter_cancellation.py description:
 A scan of the patient's completed letter cancellation task is read and preprocessed to reduce noise. The arrow contour is isolated among all detected contours and its centroid is used to orient the image. The image is then cropped to narrow in on the rectangular block of text and further denoised. The text block is precisely isolated by detecting its four corners and using them to apply a perspective transform onto a standardized image size. Treating the letters within the text block as a grid, the positions of the Es and Rs were determined manually which are used to isolate each letter within its own small image. These images are processed to remove as many irrelevant contours as possible and to centre the letter in a new image of standardized size. The contours, contour holes, and diagonal lines of each image are then used to determine which target letters were detected by the patient. The target letters are post-processed to determine the number of crossed-out letters on the left and right sides (LetC_LS, LetC_RS), the total number of crossed-out letters and its corresponding standard value (LetC, LetC_SV), and the resulting horizontal and vertical centres of cancellation (LetC_HCoC, LetC_VCoC).
 
+#### Example:
+When running diagnostics/letter_cancellation.py on patients/JD/LetC.png, denoted here as JD_LetC_input.png, the following tuple representing (LetC_LS, LetC_RS, LetC, LetC_SV, LetC_HCoC, LetC_VCoC) is outputted: (7, 19, 26, 6.5, 0.32, -0.06). 7/20 target letters were detected on the left side, 19/20 on the right side, and therefore 26/40 in total, corresponding to a standard value of 6.5/10.0. On a scale from -1.00 to 1.00, the horizontal and vertical centres of cancellation are 0.32 and -0.06, respectively. The JD_LetC_output.png image, written from the scoring_img variable in the post_processing function of diagnostics/letter_cancellation.py, provides a visualization of the result.
+
+![JD_LetC_comparison.png](example/JD_LetC_comparison.png)
+
 ### 3. Star Cancellation Task
 
 #### Overview:
