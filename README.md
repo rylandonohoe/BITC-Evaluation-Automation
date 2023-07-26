@@ -53,6 +53,11 @@ Patients are required to detect and cross out all small stars on a page strewn w
 #### diagnostics/star_cancellation.py description:
 A scan of the patient's completed star cancellation task is read and preprocessed to reduce noise and erode the white background. The arrow contour is isolated among all detected contours and its centroid is used to orient the image. The image is then cropped based on the centroid of the rotated arrow contour to narrow in on the ROI. The ROI is precisely isolated by detecting four points that can be consistently identified across all patient scans and using them to apply a perspective transform onto a standardized image size. The coordinates of the target points used to define the perspective transform matrix were manually determined from templates/StarC_T_cropped.png (i.e., the ROI of templates/StarC_T.png). The coordinates of the 54 small stars were also manually determined from templates/StarC_T_cropped.png and used to isolate each small star within its own small image. These images are processed to remove as many irrelevant contours as possible and to rotate and centre the small star to standardize its orientation and position. The contours, skeleton, corners, slant, and other morphological features of each image are then used to determine which small stars were detected by the patient. The target stars are post-processed to determine the number of crossed-out small stars on the left and right sides (StarC_LS, StarC_RS), the total number of crossed-out small stars and its corresponding standard value (StarC, StarC_SV), and the resulting horizontal and vertical centres of cancellation (StarC_HCoC, StarC_VCoC).
 
+#### Example:
+When running diagnostics/star_cancellation.py on patients/JD/StarC.png, denoted here as JD_StarC_input.png, the following tuple representing (StarC_LS, StarC_RS, StarC, StarC_SV, StarC_HCoC, StarC_VCoC) is outputted: (10, 25, 35, 6.0, 0.31, -0.07). 10/27 target stars were detected on the left side, 25/27 on the right side, and therefore 35/54 in total, corresponding to a standard value of 6.0/10.0. On a scale from -1.00 to 1.00, the horizontal and vertical centres of cancellation are 0.31 and -0.07, respectively. The JD_StarC_output.png image, written from the scoring_img variable in the post_processing function of diagnostics/star_cancellation.py, provides a visualization of the result.
+
+![JD_StarC_comparison.png](example/JD_StarC_comparison.png)
+
 ### 4. Figure and Shape Copying Task
 
 #### Overview:
@@ -78,4 +83,4 @@ A scan of the patient's completed line bisection task is read and heavily prepro
 #### Example:
 When running diagnostics/line_bisection.py on patients/JD/LineB.png, denoted here as JD_LineB_input.png, the following tuple representing (LineB_T, LineB_M, LineB_B, LineB, LineB_SV, LineB_HCoC) is outputted: ('2L', '2R', '0R', 4, 4.0, 0.12). The top bisection scored 2/3 and was deviated to the left, the middle bisection scored 2/3 and was deviated to the right, the bottom bisection scored 0/3 and was deviated to the right, and therefore 4/9 was the total score, corresponding to a standard value of 4.0/10.0. On a scale from -1.00 to 1.00, the horizontal centre of cancellation was 0.12. The JD_LineB_output.png image, written from the scoring_img variable in the post_processing function of diagnostics/line_bisection.py, provides a visualization of the result.
 
-![JD_LetC_comparison.png](example/JD_LineB_comparison.png)
+![JD_LineB_comparison.png](example/JD_LineB_comparison.png)
