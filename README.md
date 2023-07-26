@@ -32,6 +32,11 @@ A scan of the template for the line crossing task (templates/LineC_T.png) is rea
 #### diagnostics/line_crossing.py description:
 A scan of the patient's completed line crossing task is read and heavily preprocessed to emphasize line intersection points. Once again, the centroid coordinates of relevant detected contours are stored and carefully merged to remove instances of line intersection points being represented by more than one centroid. The arrow centroid is again isolated and used to orient the image. The centroid coordinates are then cross-referenced against LineC_T_C1 to determine which target lines were detected. The target lines are post-processed to determine the number of crossed-out lines on the left and right sides (LineC_LS, LineC_RS), the total number of crossed-out lines and its corresponding standard value (LineC, LineC_SV), and the resulting horizontal and vertical centres of cancellation (LineC_HCoC, LineC_VCoC).
 
+#### Example:
+When running diagnostics/line_crossing.py on patients/JD/LineC.png, denoted here as JD_LineC_input.png, the following tuple representing (LineC_LS, LineC_RS, LineC, LineC_SV, LineC_HCoC, LineC_VCoC) is outputted: (8, 18, 26, 7.5, 0.32, 0.01). 8/18 target lines were detected on the left side, 18/18 on the right side, and therefore 26/36 in total, corresponding to a standard value of 7.5/10.0. On a scale from -1.00 to 1.00, the horizontal and vertical centres of cancellation are 0.32 and 0.01, respectively. The JD_LineC_output.png image, written from the scoring_img variable in the post_processing function of diagnostics/line_crossing.py, provides a visualization of the result.
+
+![JD_LineC_comparison.png](example/JD_LineC_comparison.png)
+
 ### 2. Letter Cancellation Task
 
 #### Overview:
