@@ -24,7 +24,7 @@ def image_pre_processing(img):
     #cv.destroyWindow("gray1")
 
     # thresholding (part 1)
-    ret, thresh1 = cv.threshold(gray1, 200, 255, cv.THRESH_BINARY)
+    ret, thresh1 = cv.threshold(gray1, 225, 255, cv.THRESH_BINARY)
 
     #cv.imshow("thresh1", thresh1)
     #k = cv.waitKey(0)
@@ -41,7 +41,7 @@ def image_pre_processing(img):
     #cv.destroyWindow("edges")
 
     # noise reduction (part 1)
-    blur1 = cv.fastNlMeansDenoising(edges, None, h=25, templateWindowSize=25, searchWindowSize=25)
+    blur1 = cv.fastNlMeansDenoising(edges, None, h=30, templateWindowSize=25, searchWindowSize=25)
     
     #cv.imshow("blur1", blur1)
     #k = cv.waitKey(0)
@@ -110,6 +110,7 @@ def intersection_detection(contour_img, contours):
     height, width = contour_img.shape[:2]
     border_buffer = 25
     min_distance_to_border = float('inf')
+
     for contour in contours:
         M = cv.moments(contour)
         area = cv.contourArea(contour)
@@ -139,10 +140,9 @@ def intersection_detection(contour_img, contours):
             merged_centroids.append(tuple(centroid))
 
     intersection_img = contour_img.copy()
-    intersection_thickness = 8
     for centroid in merged_centroids:
-        cv.circle(intersection_img, (int(centroid[0]), int(centroid[1])), intersection_thickness, (0, 255, 255), -1)
-    cv.circle(intersection_img, arrow_centroid, intersection_thickness, (0, 0, 0), -1)
+        cv.circle(intersection_img, (int(centroid[0]), int(centroid[1])), 8, (0, 255, 255), -1)
+    cv.circle(intersection_img, arrow_centroid, 8, (0, 0, 0), -1)
 
     #cv.imshow("intersection_img", intersection_img)
     #k = cv.waitKey(0)
@@ -154,7 +154,9 @@ def orient_image(intersection_img, merged_centroids, arrow_centroid):
     # determine side arrow is on assuming arrow is centred
     def get_closest_side(img, arrow_centroid):
         height, width = img.shape[:2]
-        x, y = arrow_centroid
+
+        if arrow_centroid is not None:
+                x, y = arrow_centroid
 
         if x <= width/4:
             return "left"
@@ -203,11 +205,10 @@ def orient_image(intersection_img, merged_centroids, arrow_centroid):
 
     return rotated_img, rotated_centroids
 
-def target_detection(scoring_img, rotated_centroids, LineC_T_C1):
-    superposition_img = scoring_img.copy()
-    centroid_thickness = 8
+def target_detection(rotated_img, rotated_centroids, LineC_T_C1):
+    superposition_img = rotated_img.copy()
     for centroid in LineC_T_C1:
-        cv.circle(superposition_img, (int(centroid[0]), int(centroid[1])), centroid_thickness, (0, 0, 0), -1)
+        cv.circle(superposition_img, (int(centroid[0]), int(centroid[1])), 8, (0, 0, 0), -1)
     
     #cv.imshow("superposition_img", superposition_img)
     #k = cv.waitKey(0)
@@ -215,7 +216,7 @@ def target_detection(scoring_img, rotated_centroids, LineC_T_C1):
 
     # determine subset of LineC_T_C1 that are detected
     detected_centroids = []
-    distance_threshold = 100
+    distance_threshold = 100 # required proximity of detected centroids to template centroids
     for template_centroid in LineC_T_C1:
         for centroid in rotated_centroids:
             distance = np.sqrt((centroid[0] - template_centroid[0])**2 + (centroid[1] - template_centroid[1])**2)
@@ -223,9 +224,8 @@ def target_detection(scoring_img, rotated_centroids, LineC_T_C1):
                 detected_centroids.append(tuple(template_centroid))
 
     detected_img = superposition_img.copy()
-    centroid_thickness = 8
     for centroid in detected_centroids:
-        cv.circle(detected_img, (int(centroid[0]), int(centroid[1])), centroid_thickness, (127, 127, 127), -1)
+        cv.circle(detected_img, (int(centroid[0]), int(centroid[1])), 8, (127, 127, 127), -1)
     
     #cv.imshow("detected_img", detected_img)
     #k = cv.waitKey(0)
@@ -233,22 +233,21 @@ def target_detection(scoring_img, rotated_centroids, LineC_T_C1):
 
     return detected_img, detected_centroids
 
-def post_processing(rotated_img, rotated_centroids, detected_centroids, LineC_T_C1):    
+def post_processing(detected_img, rotated_centroids, detected_centroids, LineC_T_C1):    
     # determine number of lines crossed on left and right sides
     left_centroids = []
     right_centroids = []
-    scoring_img = rotated_img.copy()
-    centroid_thickness = 8
+    scoring_img = detected_img.copy()
 
     for centroid in rotated_centroids:
-        height, width = rotated_img.shape[:2]
+        height, width = detected_img.shape[:2]
         x, y = centroid
         if x <= (width/2 - 150):
             left_centroids.append(centroid)
-            cv.circle(scoring_img, (int(centroid[0]), int(centroid[1])), centroid_thickness, (255, 0, 0), -1)
+            cv.circle(scoring_img, (int(centroid[0]), int(centroid[1])), 8, (255, 0, 0), -1)
         elif x >= (width/2 + 150):
             right_centroids.append(centroid)
-            cv.circle(scoring_img, (int(centroid[0]), int(centroid[1])), centroid_thickness, (0, 0, 255), -1)
+            cv.circle(scoring_img, (int(centroid[0]), int(centroid[1])), 8, (0, 0, 255), -1)
     
     #cv.imshow("scoring_img", scoring_img)
     #k = cv.waitKey(0)
@@ -321,10 +320,3 @@ def process_image(file_path, LineC_T_C1):
     detected_img, detected_centroids = target_detection(rotated_img, rotated_centroids, LineC_T_C1)
     LineC_LS, LineC_RS, LineC, LineC_SV, LineC_HCoC, LineC_VCoC = post_processing(detected_img, rotated_centroids, detected_centroids, LineC_T_C1)
     return LineC_LS, LineC_RS, LineC, LineC_SV, LineC_HCoC, LineC_VCoC
-
-#import line_cancellation_template
-#file_path_T = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/templates/LineC_T.png"
-#LineC_T_C1 = line_cancellation_template.process_image(file_path_T)
-#for name in ["Braun", "BW", "Daskalon", "Dotzamer", "Franz", "Gerke", "Jablonski", "Kuhn", "Loffelad", "Malm", "Sigruner", "Theato"]:
-    #file_path = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/" + name + "/LineC.png"
-    #print(process_image(file_path, LineC_T_C1))
