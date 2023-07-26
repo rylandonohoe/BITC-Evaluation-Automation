@@ -172,7 +172,7 @@ def contour_processing(img, contours):
     #k = cv.waitKey(0)
     #cv.destroyWindow("filtered_contour_img")    
 
-    # reduce contour shape complexity
+    # reduce contour shape complexity to facilitate subsequent analysis
     processed_contours = []
     for contour in filtered_contours:
         epsilon = 0.0008 * cv.arcLength(contour, True)
@@ -199,7 +199,9 @@ def orient_image(img, processed_contours, arrow_contour):
     # determine side arrow is on assuming arrow is centred
     def get_closest_side(img, arrow_centroid):
         height, width = img.shape[:2]
-        x, y = arrow_centroid
+
+        if arrow_centroid is not None:
+            x, y = arrow_centroid
 
         if x <= width/4:
             return "left"
@@ -267,11 +269,10 @@ def bisection_processing(rotated_img, rotated_contours):
         all_extreme_points.append(extreme_points)
 
     extreme_points_img = rotated_img.copy()
-    extreme_point_thickness = 8
     for extreme_points in all_extreme_points:
         for side in extreme_points:
             for extreme_point in side:
-                cv.circle(extreme_points_img, extreme_point, extreme_point_thickness, (0, 0, 255), -1)
+                cv.circle(extreme_points_img, extreme_point, 8, (0, 0, 255), -1)
 
     #cv.imshow("extreme_points_img", extreme_points_img)
     #k = cv.waitKey(0)
@@ -295,13 +296,13 @@ def bisection_processing(rotated_img, rotated_contours):
 
         group_info = {i: (len(group), np.mean(group, axis=0)) for i, group in grouped_points.items()}
 
-        sorted_groups = sorted(group_info, key=lambda x: group_info[x][1][0]) # sort groups by their mean x coordinate 
+        sorted_groups = sorted(group_info, key=lambda x: group_info[x][1][0]) # sort groups by their mean x-coordinate 
 
         # assign group names
         if len(group_info) == 3:
             bisection_index = sorted_groups[1]
         else:
-            bisection_index = max(sorted_groups[1:-1], key=lambda x: group_info[x][0])
+            bisection_index = max(sorted_groups[1:-1], key=lambda x: group_info[x][0]) # find largest group between first and last groups
         
         final_mean_points = {"left": group_info[sorted_groups[0]][1],
                              "bisection": group_info[bisection_index][1],
@@ -313,14 +314,12 @@ def bisection_processing(rotated_img, rotated_contours):
 
         final_groups.append(final_mean_points)
 
-    final_groups = sorted(final_groups, key=lambda group: group["bisection"][1]) # sort final groups by the y coordinate of their bisection
-
+    final_groups = sorted(final_groups, key=lambda group: group["bisection"][1]) # sort final groups by the y-coordinate of their bisection
     bisection_img = rotated_img.copy()
-    line_thickness = 3
     for cross in final_groups:
         for position, size, colour in zip(["left", "bisection", "right"], [30, 45, 30], [(0, 0, 0), (0, 0, 255), (0, 0, 0)]):
             x, y = cross[position].astype(int)
-            cv.line(bisection_img, (x, y - size), (x, y + size), colour, line_thickness)
+            cv.line(bisection_img, (x, y - size), (x, y + size), colour, 3)
     
     #cv.imshow("bisection_img", bisection_img)
     #k = cv.waitKey(0)
@@ -371,11 +370,10 @@ def post_processing(bisection_img, final_groups):
         else:
             LineB_B = cross_score
 
-        line_thickness = 3
-        cv.line(scoring_img, (mean_x, mean_y - 30), (mean_x, mean_y + 30), (0, 0, 0), line_thickness)
+        cv.line(scoring_img, (mean_x, mean_y - 30), (mean_x, mean_y + 30), (0, 0, 0), 3)
         for range in ["one_point", "two_point", "three_point"]:
             for x, y in ranges[range]:
-                cv.line(scoring_img, (x, y - 15), (x, y + 15), (0, 0, 0), line_thickness)
+                cv.line(scoring_img, (x, y - 15), (x, y + 15), (0, 0, 0), 3)
     
     #cv.imshow("scoring_img", scoring_img)
     #k = cv.waitKey(0)
@@ -435,7 +433,3 @@ def process_image(file_path):
     bisection_img, final_groups = bisection_processing(rotated_img, rotated_contours)
     LineB_T, LineB_M, LineB_B, LineB, LineB_SV, LineB_HCoC = post_processing(bisection_img, final_groups)
     return LineB_T, LineB_M, LineB_B, LineB, LineB_SV, LineB_HCoC
-
-#for name in ["Braun", "Daskalon", "Dotzamer", "Franz", "Jablonski", "Kuhn", "Loffelad", "Malm", "Sigruner", "Theato"]:
-    #file_path = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/" + name + "/LineB.png"
-    #print(process_image(file_path))

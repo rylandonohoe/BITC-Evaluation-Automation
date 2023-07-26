@@ -1,6 +1,5 @@
 import cv2 as cv
 import numpy as np
-import scipy.ndimage
 import skimage.morphology
 from sklearn.cluster import DBSCAN
 import sys
@@ -26,7 +25,7 @@ def image_pre_processing(img):
     #cv.destroyWindow("gray1")
 
     # noise reduction
-    blur = cv.fastNlMeansDenoising(gray1, None, h=25, templateWindowSize=25, searchWindowSize=25)
+    blur = cv.fastNlMeansDenoising(gray1, None, h=40, templateWindowSize=25, searchWindowSize=25)
     
     #cv.imshow("blur", blur)
     #k = cv.waitKey(0)
@@ -67,7 +66,7 @@ def arrow_detection(img, contours):
     arrow_centroid = None
 
     height, width = img.shape[:2]
-    border_buffer = 25
+    border_buffer = 75
     max_distance = 0
     
     filtered_centroids = []
@@ -103,7 +102,9 @@ def orient_image(img, arrow_centroid):
     # determine side arrow is on assuming arrow is centred
     def get_closest_side(img, arrow_centroid):
         height, width = img.shape[:2]
-        x, y = arrow_centroid
+        
+        if arrow_centroid is not None:
+            x, y = arrow_centroid
 
         if x <= width/4:
             return "left"
@@ -216,11 +217,11 @@ def normalize_img(reprocessed_img):
     point2 = second_twelfth_black_pixels[point2_index][::-1] # reverse order to get (x, y)
     point2[0] += int(width/12)
 
-    middle_twelfth_top = thresh[:int(height/2), int(5.5*width/12):int(6.5*width/12)]
-    middle_twelfth_top_black_pixels = np.argwhere(middle_twelfth_top == 0)
-    point3_index = middle_twelfth_top_black_pixels[:, 0].argmin()
-    point3 = middle_twelfth_top_black_pixels[point3_index][::-1] # reverse order to get (x, y)
-    point3[0] += int(5.5*width/12)
+    eleventh_twenty_fourth_top = thresh[:int(height/2), int(11*width/24):int(12*width/24)]
+    eleventh_twenty_fourth_top_black_pixels = np.argwhere(eleventh_twenty_fourth_top == 0)
+    point3_index = eleventh_twenty_fourth_top_black_pixels[:, 0].argmin()
+    point3 = eleventh_twenty_fourth_top_black_pixels[point3_index][::-1] # reverse order to get (x, y)
+    point3[0] += int(11*width/24)
 
     middle_twelfth_bottom = thresh[int(height/2):, int(5.5*width/12):int(6.5*width/12)]
     middle_bottom_black_pixels = np.argwhere(middle_twelfth_bottom == 0)
@@ -247,7 +248,7 @@ def normalize_img(reprocessed_img):
 
     height, width = 1315, 2175 # based on StarC_T_cropped.png template
     normalized_img = np.zeros((height, width), dtype=np.uint8)
-    normalized_img = cv.warpPerspective(reprocessed_img, M, (width, height))
+    normalized_img = cv.warpPerspective(reprocessed_img, M, (width, height), borderValue=255)
 
     #cv.imshow("normalized_img", normalized_img)
     #k = cv.waitKey(0)
@@ -409,7 +410,6 @@ def star_processing(stars):
 def star_cancellation_detection(processed_stars):
     final_stars = []
     
-    count = 0
     for star_dict in processed_stars:
         star_id = star_dict["id"]
         coordinates = star_dict["coordinates"]
@@ -421,7 +421,7 @@ def star_cancellation_detection(processed_stars):
 
         # first check: contour proximity to border
         flag = False
-
+        
         # edge detection
         lower_threshold = 100 # lower threshold value in Hysteresis Thresholding
         upper_threshold = 200 # upper threshold value in Hysteresis Thresholding
@@ -432,7 +432,7 @@ def star_cancellation_detection(processed_stars):
         #k = cv.waitKey(0)
         #cv.destroyWindow("edges")
         
-        # find contours (part 1)
+        # find contours
         contours, hierarchy = cv.findContours(edges, cv.RETR_TREE, cv.CHAIN_APPROX_NONE)
 
         contour_img = 255 * np.ones_like(star_img)
@@ -467,10 +467,6 @@ def star_cancellation_detection(processed_stars):
             #k = cv.waitKey(0)
             #cv.destroyWindow("skeleton_img")
 
-            # determine pixel neighbours
-            kernel = np.array([[1, 1, 1], [1, 0, 1], [1, 1, 1]], dtype=np.uint8)
-            neighbours = scipy.ndimage.convolve(skeleton, kernel, mode='constant', cval=0)
-
             # determine endpoints
             kernel = np.array([[1, 1, 1], [1, 10, 1], [1, 1, 1]], dtype=np.uint8)
             endpoint_coordinates = np.array([coordinates[::-1] for coordinates in np.argwhere(cv.filter2D(skeleton.astype(np.uint8), -1, kernel) == 11)]) # coordinates where value is 11 (endpoint in skeletonized image)
@@ -492,7 +488,7 @@ def star_cancellation_detection(processed_stars):
 
             # merge endpoints
             merged_endpoints = []
-            clustering = DBSCAN(eps=5, min_samples=1).fit(valid_endpoints)
+            clustering = DBSCAN(eps=8, min_samples=1).fit(valid_endpoints)
             labels = clustering.labels_
 
             for label in set(labels):
@@ -602,7 +598,7 @@ def star_cancellation_detection(processed_stars):
             #cv.destroyWindow("resized")
 
             black_pixel_num = np.sum(resized == 0)
-            if black_pixel_num > 800:
+            if black_pixel_num > 815:
                 flag = True
 
         # sixth check: presence of top isosceles triangle
@@ -630,7 +626,7 @@ def star_cancellation_detection(processed_stars):
             if distance_difference > 8:
                 flag = True
 
-        # seventh check:
+        # seventh check: location of bottom middle vertex
         if not flag:
             roi_width_start = width // 2 - width // 50
             roi_width_end = width // 2 + width // 50
@@ -688,7 +684,7 @@ def post_processing(final_stars, normalized_img):
         else:
             cv.circle(scoring_img, (x, y), 8, (0, 0, 255), -1)
 
-    # draw on uncounted small stars
+    # draw on uncounted small stars for visualization
     cv.circle(scoring_img, (1010, 645), 8, (0, 255, 255), -1)
     cv.circle(scoring_img, (1010, 1060), 8, (0, 255, 255), -1)
 
@@ -763,7 +759,3 @@ def process_image(file_path, patient):
     final_stars = star_cancellation_detection(processed_stars)
     StarC_LS, StarC_RS, StarC, StarC_SV, StarC_HCoC, StarC_VCoC = post_processing(final_stars, normalized_img)
     return StarC_LS, StarC_RS, StarC, StarC_SV, StarC_HCoC, StarC_VCoC
-
-#for name in ["Braun", "BW", "Daskalon", "Dotzamer", "Franz", "Jablonski", "Kuhn", "Loffelad", "Malm", "Sigruner", "Theato"]:
-    #file_path = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/" + name + "/StarC.png"
-    #print(process_image(file_path, name))

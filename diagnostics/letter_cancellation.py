@@ -58,6 +58,7 @@ def arrow_detection(img, contours):
     height, width = img.shape[:2]
     border_buffer = 25
     min_distance_to_border = float('inf')
+
     for contour in contours:
         M = cv.moments(contour)
         area = cv.contourArea(contour)
@@ -83,7 +84,9 @@ def orient_image(img, arrow_centroid):
     # determine side arrow is on assuming arrow is centred
     def get_closest_side(img, arrow_centroid):
         height, width = img.shape[:2]
-        x, y = arrow_centroid
+       
+        if arrow_centroid is not None:
+            x, y = arrow_centroid
 
         if x <= width/4:
             return "left"
@@ -172,24 +175,24 @@ def isolate_text_block(reprocessed_img):
         coords = np.meshgrid(x, y)
 
         # create meshgrids of distances to each corner
-        top_left_dist = np.sqrt((coords[1] - 0)**2 + (coords[0] - 0)**2)
-        top_right_dist = np.sqrt((coords[1] - 0)**2 + (coords[0] - (img.shape[1] - 1))**2)
-        bottom_left_dist = np.sqrt((coords[1] - (img.shape[0]-1))**2 + (coords[0] - 0)**2)
-        bottom_right_dist = np.sqrt((coords[1] - (img.shape[0]-1))**2 + (coords[0] - (img.shape[1] - 1))**2)
+        top_left_distances = np.sqrt((coords[1] - 0)**2 + (coords[0] - 0)**2)
+        top_right_distances = np.sqrt((coords[1] - 0)**2 + (coords[0] - (img.shape[1] - 1))**2)
+        bottom_left_distances = np.sqrt((coords[1] - (img.shape[0] - 1))**2 + (coords[0] - 0)**2)
+        bottom_right_distances = np.sqrt((coords[1] - (img.shape[0] - 1))**2 + (coords[0] - (img.shape[1] - 1))**2)
 
         # find black pixel closest to each corner
-        top_left = black_pixels[np.argmin(top_left_dist[black_pixels[:,0], black_pixels[:,1]])]
-        top_right = black_pixels[np.argmin(top_right_dist[black_pixels[:,0], black_pixels[:,1]])]
-        bottom_left = black_pixels[np.argmin(bottom_left_dist[black_pixels[:,0], black_pixels[:,1]])]
-        bottom_right = black_pixels[np.argmin(bottom_right_dist[black_pixels[:,0], black_pixels[:,1]])]
+        top_left = black_pixels[np.argmin(top_left_distances[black_pixels[:,0], black_pixels[:,1]])]
+        top_right = black_pixels[np.argmin(top_right_distances[black_pixels[:,0], black_pixels[:,1]])]
+        bottom_left = black_pixels[np.argmin(bottom_left_distances[black_pixels[:,0], black_pixels[:,1]])]
+        bottom_right = black_pixels[np.argmin(bottom_right_distances[black_pixels[:,0], black_pixels[:,1]])]
 
         corners = [(point[1], point[0]) for point in [top_left, top_right, bottom_left, bottom_right]]
         
         return corners
     
     # shift corners outward
-    def shift_corners(corrected_corners):
-        top_left, top_right, bottom_left, bottom_right = corrected_corners
+    def shift_corners(corners):
+        top_left, top_right, bottom_left, bottom_right = corners
 
         shift = 40
         top_left = (top_left[0] - shift/4, top_left[1] - shift)
@@ -206,9 +209,8 @@ def isolate_text_block(reprocessed_img):
 
     gray3 = cv.cvtColor(reprocessed_img, cv.COLOR_GRAY2BGR) # image is now 3-channel
     corner_img = gray3.copy()
-    corner_thickness = 8
     for corner in shifted_corners:
-        cv.circle(corner_img, (int(corner[0]), int(corner[1])), corner_thickness, (0, 0, 255), -1)
+        cv.circle(corner_img, (int(corner[0]), int(corner[1])), 8, (0, 0, 255), -1)
     
     #cv.imshow("corner_img", corner_img)
     #k = cv.waitKey(0)
@@ -220,8 +222,7 @@ def isolate_text_block(reprocessed_img):
         top_left, top_right, bottom_left, bottom_right = corners
         src = np.array([top_left, top_right, bottom_left, bottom_right], dtype='float32')
         
-        width = 2000
-        height = 600
+        width, height = 2000, 600 # set normalized image size
         dst = np.array([[0, 0], [width - 1, 0], [0, height - 1], [width - 1, height - 1]], dtype='float32')
 
         # compute and apply the perspective transform matrix based on src and dst arrays
@@ -292,7 +293,7 @@ def isolate_Es_and_Rs(text_lines, patient):
 
 def letter_processing(Es_and_Rs):
     processed_Es_and_Rs = []
-    normalized_size = (120, 100) # set standard letter_img size of leftover_Es_and_Rs
+    normalized_size = (120, 100) # set standard letter_img size
 
     for letter_dict in Es_and_Rs:
         letter_id = letter_dict["id"]
@@ -625,7 +626,3 @@ def process_image(file_path, patient):
     final_Es_and_Rs = letter_cancellation_detection(processed_Es_and_Rs)
     LetC_LS, LetC_RS, LetC, LetC_SV, LetC_HCoC, LetC_VCoC = post_processing(final_Es_and_Rs, text_img)
     return LetC_LS, LetC_RS, LetC, LetC_SV, LetC_HCoC, LetC_VCoC
-
-#for name in ["Braun", "Daskalon", "Dotzamer", "Franz", "Jablonski", "Kuhn", "Loffelad", "Malm", "Sigruner", "Theato"]:
-    #file_path = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation/patients/" + name + "/LetC.png"
-    #print(process_image(file_path, name))
