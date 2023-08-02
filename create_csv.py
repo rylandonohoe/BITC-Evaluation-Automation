@@ -10,7 +10,7 @@ import diagnostics.diamond_copying as diag_CopyDiamond
 import diagnostics.flower_copying as diag_CopyFlower
 import diagnostics.line_bisection as diag_LineB
 
-pathname = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BIT-Screening-Automation" # path to cloned BIT-Screening-Automation directory
+pathname = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BITC-Evaluation-Automation" # path to cloned BITC-Evaluation-Automation directory
 data = []
 
 # iterate through templates subdirectory to determine template constants
