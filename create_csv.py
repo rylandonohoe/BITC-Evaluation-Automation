@@ -55,13 +55,13 @@ for folder_name in os.listdir(patients_folder_path):
                     'StarC_RS': None, # star cancellation task: number of stars crossed on right side
                     'StarC_HCoC': None, # star cancellation task: horizontal centre of cancellation
                     'StarC_VCoC': None, # star cancellation task: vertical centre of cancellation
-                    'CopyStar_F': None, # star copying task: form score
+                    'CopyStar_S': None, # star copying task: shape score
                     'CopyStar_D': None, # star copying task: detail score
                     'CopyStar_A': None, # star copying task: arrangement score
-                    'CopyDiamond_F': None, # diamond copying task: form score
+                    'CopyDiamond_S': None, # diamond copying task: shape score
                     'CopyDiamond_D': None, # diamond copying task: detail score
                     'CopyDiamond_A': None, # diamond copying task: arrangement score
-                    'CopyFlower_F': None, # flower copying task: form score
+                    'CopyFlower_S': None, # flower copying task: shape score
                     'CopyFlower_D': None, # flower copying task: detail score
                     'CopyFlower_A': None, # flower copying task: arrangement score
                     'LineB_T': None, # line bisection task: score of top line on L or R side
@@ -80,9 +80,9 @@ for folder_name in os.listdir(patients_folder_path):
                 elif file_name in ["StarC.png", "StarC.jpg", "StarC.jpeg"]:
                     row_data['StarC_LS'], row_data['StarC_RS'], row_data['StarC'], row_data['StarC_SV'], row_data['StarC_HCoC'], row_data['StarC_VCoC'] = diag_StarC.process_image(file_path, folder_name)
                 elif file_name in ["Copy.png", "Copy.jpg", "Copy.jpeg"]:
-                    row_data['CopyStar_F'], row_data['CopyStar_D'], row_data['CopyStar_A'], row_data['CopyStar'], row_data['CopyStar_SV'] = diag_CopyStar.process_image(file_path)
-                    row_data['CopyDiamond_F'], row_data['CopyDiamond_D'], row_data['CopyDiamond_A'], row_data['CopyDiamond'], row_data['CopyDiamond_SV'] = diag_CopyDiamond.process_image(file_path)
-                    row_data['CopyFlower_F'], row_data['CopyFlower_D'], row_data['CopyFlower_A'], row_data['CopyFlower'], row_data['CopyFlower_SV'] = diag_CopyFlower.process_image(file_path)
+                    row_data['CopyStar_S'], row_data['CopyStar_D'], row_data['CopyStar_A'], row_data['CopyStar'], row_data['CopyStar_SV'] = diag_CopyStar.process_image(file_path)
+                    row_data['CopyDiamond_S'], row_data['CopyDiamond_D'], row_data['CopyDiamond_A'], row_data['CopyDiamond'], row_data['CopyDiamond_SV'] = diag_CopyDiamond.process_image(file_path)
+                    row_data['CopyFlower_S'], row_data['CopyFlower_D'], row_data['CopyFlower_A'], row_data['CopyFlower'], row_data['CopyFlower_SV'] = diag_CopyFlower.process_image(file_path)
                 elif file_name in ["LineB.png", "LineB.jpg", "LineB.jpeg"]:
                     row_data['LineB_T'], row_data['LineB_M'], row_data['LineB_B'], row_data['LineB'], row_data['LineB_SV'], row_data['LineB_HCoC'] = diag_LineB.process_image(file_path)
                 else:
