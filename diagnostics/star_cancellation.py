@@ -139,7 +139,7 @@ def orient_image(img, arrow_centroid):
         # rotate arrow centroid
         arrow_centroid = np.array([[arrow_centroid[0]], [arrow_centroid[1]], [1]])
         rotated_arrow_centroid = np.matmul(M, arrow_centroid)
-        rotated_arrow_centroid = (int(rotated_arrow_centroid[0]), int(rotated_arrow_centroid[1]))
+        rotated_arrow_centroid = (int(rotated_arrow_centroid[0][0]), int(rotated_arrow_centroid[1][0]))
 
         return rotated_img, rotated_arrow_centroid
 
