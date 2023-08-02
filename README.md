@@ -1,10 +1,12 @@
-# BIT-Screening-Automation
+# BITC-Evaluation-Automation
 
 ## Description
 The Behavioural Inattention Test (BIT) is a battery of tasks used to screen for unilateral neglect in stroke patients. The BIT Conventional subtest (BITC) consists of 6 tasks: line crossing, letter cancellation, star cancellation, figure and shape copying, line bisection, and representational drawing. This paper-pen test currently requires tedious manual scoring. Certain metrics, such as the horizontal and vertical centres of cancellation, can be especially time-consuming to determine using only a ruler and calculator. Others, like the form, detail, and arrangement scores for the figure and shape copying task, rely on somewhat subjective scoring criteria that can lead to inconsistent scoring across evaluators. This project seeks to streamline and standardize this process by using computer vision techniques to automate the evaluation of the first 5 tasks of the BITC.
 
 ## Installation
 This project requires Python 3.10+ and 5 Python libraries: NumPy, OpenCV, pandas, scikit-image, and scikit-learn. After installing the necessary libraries, git clone this repository to your local machine.
+
+...more info on OpenCV...
 
 ## Components
 In the BIT-Screening-Automation directory, there are four main subdirectories: diagnostics, templates, patients, and example.
@@ -67,15 +69,18 @@ When running diagnostics/star_cancellation.py on patients/JD/StarC.png, denoted 
 ### 4. Figure and Shape Copying Task
 
 #### Overview:
-...
+Patients are required to copy three simple drawings (i.e., a four-pointed star, a diamond, and a flower) from the left side onto the right side of a page. For each drawing, 1 point is each awarded for the correct rendering of the shape, the detail, and the arrangement of the drawing for a maximum of 3 points. The maximum score is 9 points (3 for each drawing). Refer to templates/Copy_T.png or templates/Copy_T.pdf for a template of the task.
 
 #### diagnostics/star_copying.py description:
-...
+A scan of the patient's completed figure and shape copying task is read, cropped to narrow in on the star drawing, and preprocessed. Detected corners are then merged, filtered, reduced to a count of 8 if necessary, and finally sorted by ascending angle in standard position. An ideal star is constructed by drawing line segments between consecutive corners of the final list of sorted corners. The overlap between the patient's star drawing and the ideal star is evaluated by defining points along each line of the ideal star, forming short perpendicular lines at each defined point, and subsequently searching for any overlapping black pixels from the patient's star drawing along these perpendicular lines to determine which defined points are valid. A line of the ideal star is deemed valid if a sufficient number of its points are valid. The sorted corners and valid lines are post-processed to determine the shape, detail, and arrangement scores (CopyStar_S, CopyStar_D, CopyStar_A), along with the total score and its corresponding standard value (CopyStar, CopyStar_SV).
 
 #### diagnostics/diamond_copying.py description:
-...
+A scan of the patient's completed figure and shape copying task is read, cropped to narrow in on the diamond drawing, and preprocessed to reduce noise and simplify the drawing. Detected lines are filtered to remove lines that are not part of the patient's diamond drawing. An ideal diamond is constructed by drawing line segments between consecutive points of the topmost, rightmost, bottommost, and leftmost corners of the filtered lines as well as between the topmost and bottommost corners for the vertical line. If the leftmost or rightmost corners are incompletely drawn by the patient, the point is extrapolated to represent the intended angle. The overlap between the patient's diamond drawing and the ideal diamond is evaluated by defining points along each line of the ideal diamond, forming short perpendicular lines at each defined point, and subsequently searching for any intersection with a line from the patient's diamond drawing along these perpendicular lines to determine which defined points are valid. A line of the ideal diamond is deemed valid if a sufficient number of its points are valid. The corners and valid lines are post-processed to determine the shape, detail, and arrangement scores (CopyDiamond_S, CopyDiamond_D, CopyDiamond_A), along with the total score and its corresponding standard value (CopyDiamond, CopyDiamond_SV).
 
 #### diagnostics/flower_copying.py description:
+...
+
+#### Example:
 ...
 
 ### 5. Line Bisection Task
