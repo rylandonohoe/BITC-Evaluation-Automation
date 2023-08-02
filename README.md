@@ -9,18 +9,18 @@ This project requires Python 3.10+ and 5 Python libraries: NumPy, OpenCV, pandas
 ...more info on OpenCV...
 
 ## Components
-In the BIT-Screening-Automation directory, there are four main subdirectories: diagnostics, templates, patients, and example.
+In the BITC-Evaluation-Automation directory, there are four main subdirectories: diagnostics, templates, patients, and example.
 
 1. The diagnostics subdirectory contains the 8 Python files that do the automatic scoring of the tasks: line_crossing_template.py, line_crossing.py, letter_cancellation.py, star_cancellation.py, star_copying.py, diamond_copying.py, flower_copying.py, and line_bisection.py. Take a look at these files if you wish to understand the scoring process or adjust any of the thresholds. Refer to Tasks below for a written description and example of each of the tasks and their corresponding Python scripts.
 2. The templates subdirectory contains a png and pdf version of the template for each of the five tasks. Assess patients using printed copies of these templates and black pen for optimal program performance. Note: the StarC_T_Cropped.png and StarC_T_Cropped.pdf are not to be printed out for patient use (cf. StarC_T.png and StarC_T.pdf); they were used for manually determining constants needed for the diagnostics/star_cancellation.py script. Refer to the diagnostics/star_cancellation.py description below for more information.
 3. The patients subdirectory is to be filled in by you and will contain all of the raw scans that are to be automatically evaluated. Refer to step 1 of Usage below for more guidance.
 4. The example subdirectory contains an example input and output image for each of the tasks for an imaginary patient, JD. Also included are comparison images which have the input and output images side-by-side for aided visualization of the automated evaluation of the tasks. These comparison images are shown in Tasks below as they become relevant, so there is no need for you to ever enter this example subdirectory.
 
-Also in the BIT-Screening-Automation directory is the create_csv.py file. This is the only Python file you will have to open and is used to generate a patients.csv file within the same directory that contains the automatic scoring data for each of your patients. Refer to step 2 of Usage below for more guidance.
+Also in the BITC-Evaluation-Automation directory is the create_csv.py file. This is the only Python file you will have to open and is used to generate a patients.csv file within the same directory that contains the automatic scoring data for each of your patients. Refer to step 2 of Usage below for more guidance.
 
 ## Usage
-1. Once you have cloned the BIT-Screening-Automation directory, the first step is to fill the patients subdirectory. For each of your patients, use their pseudonym to title a new subdirectory within the patients subdirectory and then add scans of their completed tasks that you wish to be automatically evaluated. The files within must be named according to their task as follows: LineC for line cancellation, LetC for letter cancellation, StarC for star cancellation, Copy for figure and shape copying, and LineB for line bisection with either a png, jpg, or jpeg extension (e.g., LineC.png). JD and duplicates of their input files are included as an example of a properly set-up patient; feel free to remove this subdirectory whenever you want.
-2. Once all of your patient files are properly set up in the patients subdirectory, open the create_csv.py file within the BIT-Screening-Automation directory. First, edit the pathname on line 13 to be the path to your cloned BIT-Screening-Automation directory (e.g., "/Users/rylandonohoe/Downloads/BIT-Screening-Automation"). Then, run the file to generate a patients.csv file within the same directory. This patients.csv file contains the automatic scoring data for each of the patients you put in the patients subdirectory. Depending on how many of the 5 files you included for each patient, up to 41 metrics are filled in next to each pseudonym; refer to the create_csv.py file to understand the meaning behind each score.
+1. Once you have cloned the BITC-Evaluation-Automation directory, the first step is to fill the patients subdirectory. For each of your patients, use their pseudonym to title a new subdirectory within the patients subdirectory and then add scans of their completed tasks that you wish to be automatically evaluated. The files within must be named according to their task as follows: LineC for line cancellation, LetC for letter cancellation, StarC for star cancellation, Copy for figure and shape copying, and LineB for line bisection with either a png, jpg, or jpeg extension (e.g., LineC.png). JD and duplicates of their input files are included as an example of a properly set-up patient; feel free to remove this subdirectory whenever you want.
+2. Once all of your patient files are properly set up in the patients subdirectory, open the create_csv.py file within the BITC-Evaluation-Automation directory. First, edit the pathname on line 13 to be the path to your cloned BITC-Evaluation-Automation directory (e.g., "/Users/rylandonohoe/Downloads/BITC-Evaluation-Automation"). Then, run the file to generate a patients.csv file within the same directory. This patients.csv file contains the automatic scoring data for each of the patients you put in the patients subdirectory. Depending on how many of the 5 files you included for each patient, up to 41 metrics are filled in next to each pseudonym; refer to the create_csv.py file to understand the meaning behind each score.
 
 ## Tasks
 
@@ -81,7 +81,17 @@ A scan of the patient's completed figure and shape copying task is read, cropped
 ...
 
 #### Example:
-...
+When running diagnostics/star_copying.py on patients/JD/Copy.png, the following tuple representing (CopyStar_S, CopyStar_D, CopyStar_A, CopyStar, CopyStar_SV) is outputted: (1, 1, 1, 3, 10.0). The shape point was awarded, the detail point was awarded, the arrangement point was awarded, and therefore 3/3 was the total score, corresponding to a standard value of 10.0/10.0. The JD_CopyStar_input.png and JD_CopyStar_output.png images, written from the resized variable in the image_acquisition function and the overlap_img variable in the star_overlap function of diagnostics/star_copying.py, respectively, provide a visualization of the input and result.
+
+![JD_CopyStar_comparison.png](example/JD_CopyStar_comparison.png)
+
+When running diagnostics/diamond_copying.py on patients/JD/Copy.png, the following tuple representing (CopyDiamond_S, CopyDiamond_D, CopyDiamond_A, CopyDiamond, CopyDiamond_SV) is outputted: (1, 1, 1, 3, 10.0). The shape point was awarded, the detail point was awarded, the arrangement point was awarded, and therefore 3/3 was the total score, corresponding to a standard value of 10.0/10.0. The JD_CopyDiamond_input.png and JD_CopyDiamond_output.png images, written from the resized variable in the image_acquisition function and the overlap_img variable in the diamond_overlap function of diagnostics/star_copying.py, respectively, provide a visualization of the input and result.
+
+![JD_CopyDiamond_comparison.png](example/JD_CopyDiamond_comparison.png)
+
+...flower_copying.py details...
+
+Overall, the total score was 8/9.
 
 ### 5. Line Bisection Task
 
