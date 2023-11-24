@@ -10,7 +10,7 @@ import diagnostics.diamond_copying as diag_CopyDiamond
 import diagnostics.flower_copying as diag_CopyFlower
 import diagnostics.line_bisection as diag_LineB
 
-pathname = "/Users/rylandonohoe/Documents/GitHub/RISE_Germany_2023/BITC-Evaluation-Automation" # path to cloned BITC-Evaluation-Automation directory
+pathname = "/Users/rylandonohoe/Documents/GitHub/BITC-Evaluation-Automation" # path to cloned BITC-Evaluation-Automation directory
 data = []
 
 # iterate through templates subdirectory to determine template constants
@@ -81,8 +81,8 @@ for folder_name in os.listdir(patients_folder_path):
                     row_data['StarC_LS'], row_data['StarC_RS'], row_data['StarC'], row_data['StarC_SV'], row_data['StarC_HCoC'], row_data['StarC_VCoC'] = diag_StarC.process_image(file_path, folder_name)
                 elif file_name in ["Copy.png", "Copy.jpg", "Copy.jpeg"]:
                     row_data['CopyStar_S'], row_data['CopyStar_D'], row_data['CopyStar_A'], row_data['CopyStar'], row_data['CopyStar_SV'] = diag_CopyStar.process_image(file_path)
-                    row_data['CopyDiamond_S'], row_data['CopyDiamond_D'], row_data['CopyDiamond_A'], row_data['CopyDiamond'], row_data['CopyDiamond_SV'] = diag_CopyDiamond.process_image(file_path)
-                    row_data['CopyFlower_S'], row_data['CopyFlower_D'], row_data['CopyFlower_A'], row_data['CopyFlower'], row_data['CopyFlower_SV'] = diag_CopyFlower.process_image(file_path)
+                    #row_data['CopyDiamond_S'], row_data['CopyDiamond_D'], row_data['CopyDiamond_A'], row_data['CopyDiamond'], row_data['CopyDiamond_SV'] = diag_CopyDiamond.process_image(file_path)
+                    #row_data['CopyFlower_S'], row_data['CopyFlower_D'], row_data['CopyFlower_A'], row_data['CopyFlower'], row_data['CopyFlower_SV'] = diag_CopyFlower.process_image(file_path)
                 elif file_name in ["LineB.png", "LineB.jpg", "LineB.jpeg"]:
                     row_data['LineB_T'], row_data['LineB_M'], row_data['LineB_B'], row_data['LineB'], row_data['LineB_SV'], row_data['LineB_HCoC'] = diag_LineB.process_image(file_path)
                 else:
