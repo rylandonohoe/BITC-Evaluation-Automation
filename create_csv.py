@@ -79,8 +79,8 @@ for folder_name in os.listdir(patients_folder_path):
                     row_data['LetC_LS'], row_data['LetC_RS'], row_data['LetC'], row_data['LetC_SV'], row_data['LetC_HCoC'], row_data['LetC_VCoC'] = diag_LetC.process_image(file_path, folder_name)
                 elif file_name in ["StarC.png", "StarC.jpg", "StarC.jpeg"]:
                     row_data['StarC_LS'], row_data['StarC_RS'], row_data['StarC'], row_data['StarC_SV'], row_data['StarC_HCoC'], row_data['StarC_VCoC'] = diag_StarC.process_image(file_path, folder_name)
-                elif file_name in ["Copy.png", "Copy.jpg", "Copy.jpeg"]:
-                    row_data['CopyStar_S'], row_data['CopyStar_D'], row_data['CopyStar_A'], row_data['CopyStar'], row_data['CopyStar_SV'] = diag_CopyStar.process_image(file_path)
+                #elif file_name in ["Copy.png", "Copy.jpg", "Copy.jpeg"]:
+                    #row_data['CopyStar_S'], row_data['CopyStar_D'], row_data['CopyStar_A'], row_data['CopyStar'], row_data['CopyStar_SV'] = diag_CopyStar.process_image(file_path)
                     #row_data['CopyDiamond_S'], row_data['CopyDiamond_D'], row_data['CopyDiamond_A'], row_data['CopyDiamond'], row_data['CopyDiamond_SV'] = diag_CopyDiamond.process_image(file_path)
                     #row_data['CopyFlower_S'], row_data['CopyFlower_D'], row_data['CopyFlower_A'], row_data['CopyFlower'], row_data['CopyFlower_SV'] = diag_CopyFlower.process_image(file_path)
                 elif file_name in ["LineB.png", "LineB.jpg", "LineB.jpeg"]:

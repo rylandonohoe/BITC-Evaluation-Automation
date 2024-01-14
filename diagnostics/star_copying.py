@@ -13,9 +13,8 @@ def image_acquisition(file_path):
     #k = cv.waitKey(0)
     #cv.destroyWindow("img")
 
-    # isolate star
-    height, width = img.shape[:2]
-    resized = img[5:int(height/3 - 25), int(width/2 + 15):int(width - 45)]
+    # resize the image to standard resolution 1650 x 2340
+    resized = cv.resize(img, (1650, 2340))
 
     #cv.imshow("resized", resized)
     #k = cv.waitKey(0)
@@ -23,9 +22,133 @@ def image_acquisition(file_path):
 
     return resized
 
-def image_pre_processing(resized):
+def isolate_star(resized):
     # grayscale conversion
     gray1 = cv.cvtColor(resized, cv.COLOR_BGR2GRAY) # image is now 1-channel
+
+    #cv.imshow("gray1", gray1)
+    #k = cv.waitKey(0)
+    #cv.destroyWindow("gray1")
+
+    # corner detection
+    blockSize = 40 # size of neighbourhood considered for corner detection
+    kSize = 27 # aperture parameter of the Sobel derivative used
+    k = 0.05 # Harris detector free parameter in the equation
+    dst = cv.cornerHarris(gray1, blockSize, kSize, k)
+    corners = np.where(dst > 0.02 * dst.max())
+    
+    corner_img = resized.copy()
+    corner_img[corners] = [0, 255, 0]
+
+    #cv.imshow("corner_img", corner_img)
+    #k = cv.waitKey(0)
+    #cv.destroyWindow("corner_img")
+
+    # merge corners
+    merged_corners = []
+    corner_coordinates = np.array(list(zip(corners[1], corners[0]))) # format corners into list of (x, y) coordinates
+    clustering = DBSCAN(eps=15, min_samples=200).fit(corner_coordinates)
+    labels = clustering.labels_
+
+    for label in set(labels):
+        if label != -1: # ignore noise points
+            cluster_points = corner_coordinates[labels == label]
+            mean_corner = np.mean(cluster_points, axis=0)
+            merged_corners.append(tuple(mean_corner))
+    
+    merged_img = resized.copy()
+    for corner in merged_corners:
+        cv.circle(merged_img, (int(corner[0]), int(corner[1])), 8, (0, 0, 255), -1)
+
+    #cv.imshow("merged_img", merged_img)
+    #k = cv.waitKey(0)
+    #cv.destroyWindow("merged_img")
+
+    # isolate landmark corners
+    landmark_corners = []
+
+    height, width = resized.shape[:2]
+    width_range = (int(14/32 * width), int(17/32 * width))
+    height_range_1 = (int(10/32 * height), int(12/32 * height))
+    height_range_2 = (int(20/32 * height), int(22/32 * height))
+
+    for corner in merged_corners:
+        if width_range[0] <= corner[0] <= width_range[1] and (height_range_1[0] <= corner[1] <= height_range_1[1] or height_range_2[0] <= corner[1] <= height_range_2[1]):
+            landmark_corners.append(corner)
+
+    if len(landmark_corners) != 2:
+        raise Exception("Landmark corners not determined correctly.")
+    
+    landmark_img = resized.copy()
+    for corner in landmark_corners:
+        cv.circle(landmark_img, (int(corner[0]), int(corner[1])), 8, (0, 255, 0), -1)
+
+    #cv.imshow("landmark_img", landmark_img)
+    #k = cv.waitKey(0)
+    #cv.destroyWindow("landmark_img")
+
+    # determine rectangle points
+    landmark1 = np.array(landmark_corners[0])
+    landmark2 = np.array(landmark_corners[1])
+    distance = np.linalg.norm(landmark1 - landmark2)
+    direction = (landmark1 - landmark2) / distance
+    perpendicular_direction = np.array([-direction[1], direction[0]])
+
+    if landmark1[1] > landmark2[1]:
+        landmark1, landmark2 = landmark2, landmark1
+    landmark2 = landmark2 + (2 * distance * direction)
+    landmark1, landmark2 = landmark2, landmark1
+
+    start_point1 = tuple(landmark1.astype(int))
+    end_point1 = tuple((landmark1 + perpendicular_direction * (distance * 1.1)).astype(int))
+    start_point2 = tuple(landmark2.astype(int))
+    end_point2 = tuple((landmark2 + perpendicular_direction * (distance * 1.1)).astype(int))
+    points = [start_point1, end_point1, start_point2, end_point2]
+
+    point_img = resized.copy()
+    for point in points:
+        cv.circle(point_img, (point[0], point[1]), 8, (255, 0, 0), -1)
+    
+    #cv.imshow("point_img", point_img)
+    #k = cv.waitKey(0)
+    #cv.destroyWindow("point_img")
+
+    # shrink rectangle
+    np_points = np.array(points, dtype=np.float32)
+    centre = np.mean(np_points, axis=0)
+    shrink_factor = 0.05
+    shrunken_points = []
+
+    for point in np_points:
+        direction = centre - point
+        shrunken_point = point + shrink_factor * direction
+        shrunken_points.append(tuple(shrunken_point.astype(int)))
+    
+    shrunken_point_img = resized.copy()
+    for shrunken_point in shrunken_points:
+        cv.circle(shrunken_point_img, (shrunken_point[0], shrunken_point[1]), 8, (255, 0, 0), -1)
+    
+    #cv.imshow("shrunken_point_img", shrunken_point_img)
+    #k = cv.waitKey(0)
+    #cv.destroyWindow("shrunken_point_img")
+
+    # transform points and crop image
+    new_width = int(np.linalg.norm(np.array(shrunken_points[0]) - np.array(shrunken_points[1])))
+    new_height = int(np.linalg.norm(np.array(shrunken_points[0]) - np.array(shrunken_points[2])))
+    dst_points = np.array([[0, 0], [new_width - 1, 0], [0, new_height - 1], [new_width - 1, new_height - 1]], dtype=np.float32)
+
+    matrix = cv.getPerspectiveTransform(np.array(shrunken_points, dtype=np.float32), dst_points)
+    cropped_img = cv.warpPerspective(resized, matrix, (new_width, new_height))
+
+    #cv.imshow("cropped_img", cropped_img)
+    #k = cv.waitKey(0)
+    #cv.destroyWindow("cropped_img")
+
+    return cropped_img
+
+def image_pre_processing(cropped_img):
+    # grayscale conversion
+    gray1 = cv.cvtColor(cropped_img, cv.COLOR_BGR2GRAY) # image is now 1-channel
 
     #cv.imshow("gray1", gray1)
     #k = cv.waitKey(0)
@@ -42,7 +165,7 @@ def image_pre_processing(resized):
     
     return pre_processed_img
 
-def corner_detection(resized, pre_processed_img):
+def corner_detection(cropped_img, pre_processed_img):
     # corner detection
     blockSize = 40 # size of neighbourhood considered for corner detection
     kSize = 27 # aperture parameter of the Sobel derivative used
@@ -50,7 +173,7 @@ def corner_detection(resized, pre_processed_img):
     dst = cv.cornerHarris(pre_processed_img, blockSize, kSize, k)
     corners = np.where(dst > 0.02 * dst.max())
     
-    corner_img = resized.copy()
+    corner_img = cropped_img.copy()
     corner_img[corners] = [0, 255, 0]
 
     #cv.imshow("corner_img", corner_img)
@@ -59,7 +182,7 @@ def corner_detection(resized, pre_processed_img):
     
     return corner_img, corners
 
-def corner_processing(resized, corners):
+def corner_processing(cropped_img, corners):
     # merge corners
     merged_corners = []
     corner_coordinates = np.array(list(zip(corners[1], corners[0]))) # format corners into list of (x, y) coordinates
@@ -72,7 +195,7 @@ def corner_processing(resized, corners):
             mean_corner = np.mean(cluster_points, axis=0)
             merged_corners.append(tuple(mean_corner))
     
-    merged_img = resized.copy()
+    merged_img = cropped_img.copy()
     for corner in merged_corners:
         cv.circle(merged_img, (int(corner[0]), int(corner[1])), 8, (0, 0, 255), -1)
     
@@ -89,7 +212,7 @@ def corner_processing(resized, corners):
                     distance = np.sqrt((corner1[0] - corner2[0])**2 + (corner1[1] - corner2[1])**2)
                     if distance <= 400:
                         filtered_corners.append(corner1)
-                        break                    
+                        break
 
     # reduce filtered_corners count to 8 if necessary
     def merge_closest_corners(filtered_corners):
@@ -114,7 +237,7 @@ def corner_processing(resized, corners):
     while len(filtered_corners) > 8:
         filtered_corners = merge_closest_corners(filtered_corners)
 
-    filtered_img = resized.copy()
+    filtered_img = cropped_img.copy()
     for corner in filtered_corners:
         cv.circle(filtered_img, (int(corner[0]), int(corner[1])), 8, (0, 0, 255), -1)
     
@@ -122,7 +245,7 @@ def corner_processing(resized, corners):
     #k = cv.waitKey(0)
     #cv.destroyWindow("filtered_img")
     
-    # sort merged corners by ascending angle in standard position
+    # sort merged corners (clockwise starting from top)
     centre = np.mean(filtered_corners, axis=0)
 
     cartesian_polar = [] # convert Cartesian coordinates to polar coordinates to facilitate sorting
@@ -130,17 +253,27 @@ def corner_processing(resized, corners):
         x, y = corner
         delta_x, delta_y = x - centre[0], y - centre[1]
         r = np.sqrt(delta_x**2 + delta_y**2)
-        theta = np.arctan2(-delta_y, delta_x)
+        theta = np.arctan2(delta_x, -delta_y)
         if theta < 0:
             theta += 2 * np.pi
         cartesian_polar.append(((x, y), (r, theta)))
 
     cartesian_polar.sort(key=lambda coordinates: coordinates[1][1]) # sort corners by increasing theta value
 
-    sorted_corners = [] # return to just Cartesian coordinates
-    for coordinates in cartesian_polar:
-        sorted_corners.append((coordinates[0][0], coordinates[0][1]))
-    
+    # sort starting at topmost corner
+    topmost_corner_index = np.argmin([point[0][1] for point in cartesian_polar])
+    cartesian_polar = cartesian_polar[topmost_corner_index:] + cartesian_polar[:topmost_corner_index]
+
+    sorted_corners = [coordinates[0] for coordinates in cartesian_polar]
+
+    sorted_img = cropped_img.copy()
+    for corner in sorted_corners:
+        cv.circle(sorted_img, (int(corner[0]), int(corner[1])), 8, (0, 0, 255), -1)
+        
+        #cv.imshow("sorted_img", sorted_img)
+        #k = cv.waitKey(0)
+        #cv.destroyWindow("sorted_img")
+
     return filtered_img, sorted_corners
 
 def ideal_star(filtered_img, sorted_corners):
@@ -226,7 +359,92 @@ def star_overlap(pre_processed_img, star_img, sorted_corners):
 
     return overlap_img, valid_lines
 
-def post_processing(sorted_corners, valid_lines):
+def post_processing(pre_processed_img, sorted_corners, valid_lines):
+    # extract x and y values separately
+    x_values = [point[0] for point in sorted_corners]
+    y_values = [point[1] for point in sorted_corners]
+
+    # find indices of the extreme points
+    top_index = np.argmin(y_values)
+    bottom_index = np.argmax(y_values)
+    left_index = np.argmin(x_values)
+    right_index = np.argmax(x_values)
+
+    # find extreme points using their indices
+    top = sorted_corners[top_index]
+    bottom = sorted_corners[bottom_index]
+    left = sorted_corners[left_index]
+    right = sorted_corners[right_index]
+
+    # ANGLES
+    def calculate_angle(coordinates):
+        A, B, C = coordinates
+
+        # calculate lengths of sides of triangle
+        AB = np.sqrt((B[0] - A[0])**2 + (B[1] - A[1])**2)
+        BC = np.sqrt((C[0] - B[0])**2 + (C[1] - B[1])**2)
+        CA = np.sqrt((C[0] - A[0])**2 + (C[1] - A[1])**2)
+
+        # apply the cosine law
+        angle_radians = np.arccos((AB**2 + BC**2 - CA**2) / (2 * AB * BC))
+        angle_degrees = np.degrees(angle_radians)
+
+        return angle_degrees
+
+    # calculate angles
+    angles = []
+    n = len(sorted_corners)
+    for i in range(n):
+        A = sorted_corners[i % n]
+        B = sorted_corners[(i + 1) % n]
+        C = sorted_corners[(i + 2) % n]
+        angle = calculate_angle([A, B, C])
+        angles.append(round(angle, 2))
+    
+    CopyStar_AIA = angles # all internal angles (clockwise from top-right)
+    CopyStar_AVA = round(calculate_angle([top, bottom, (bottom[0], top[1])]), 2) # absolute vertical angle
+    CopyStar_AHA = round(calculate_angle([left, right, (left[0], right[1])]), 2) # absolute horzontal angle
+
+    # AREAS
+    def calculate_area(coordinates):
+        area = 0
+        
+        for i in range(len(coordinates)):
+            j = (i + 1) % len(coordinates)
+            area += coordinates[i][0] * coordinates[j][1]
+            area -= coordinates[j][0] * coordinates[i][1]
+        area = abs(area) / 2.0
+
+        return area
+    
+    def get_cyclic_subset(start_index, end_index):
+        if start_index <= end_index:
+            return sorted_corners[start_index:end_index + 1]
+        else:
+            return sorted_corners[start_index:] + sorted_corners[:end_index + 1]
+    
+    # calculate areas
+    CopyStar_LA = round(calculate_area(get_cyclic_subset(bottom_index, top_index)), 2) # left area
+    CopyStar_RA = round(calculate_area(get_cyclic_subset(top_index, bottom_index)), 2) # right area
+    CopyStar_TA = round(calculate_area(get_cyclic_subset(left_index, right_index)), 2) # top area
+    CopyStar_BA = round(calculate_area(get_cyclic_subset(right_index, left_index)), 2) # bottom area
+
+    # LENGTHS
+    def calculate_length(point1, point2):
+        return np.sqrt((point2[0] - point1[0])**2 + (point2[1] - point1[1])**2)
+
+    # calculate lengths
+    lengths = []
+    n = len(sorted_corners)
+    for i in range(n):
+        A = sorted_corners[i % n]
+        B = sorted_corners[(i + 1) % n]
+        length = calculate_length(A, B)
+        lengths.append(round(length, 2))
+
+    CopyStar_AL = lengths # all lengths (clockwise from top-right)
+
+    # SCORING
     # compute the shape score
     def shape_evaluation(sorted_corners, valid_lines):
         score = 0
@@ -342,15 +560,25 @@ def post_processing(sorted_corners, valid_lines):
         if CopyStar == score:
             CopyStar_SV = standard_value
             break
-    
-    return CopyStar_S, CopyStar_D, CopyStar_A, CopyStar, CopyStar_SV
+
+    return (CopyStar_S, CopyStar_D, CopyStar_A, CopyStar, CopyStar_SV,
+            CopyStar_AIA, CopyStar_AVA, CopyStar_AHA,
+            CopyStar_LA, CopyStar_RA, CopyStar_TA, CopyStar_BA,
+            CopyStar_AL)
 
 def process_image(file_path):
     resized = image_acquisition(file_path)
-    pre_processed_img = image_pre_processing(resized)
-    corner_img, corners = corner_detection(resized, pre_processed_img)
-    filtered_img, sorted_corners = corner_processing(resized, corners)
+    cropped_img = isolate_star(resized)
+    pre_processed_img = image_pre_processing(cropped_img)
+    corner_img, corners = corner_detection(cropped_img, pre_processed_img)
+    filtered_img, sorted_corners = corner_processing(cropped_img, corners)
     star_img = ideal_star(filtered_img, sorted_corners)
     overlap_img, valid_lines = star_overlap(pre_processed_img, star_img, sorted_corners)
-    CopyStar_S, CopyStar_D, CopyStar_A, CopyStar, CopyStar_SV = post_processing(sorted_corners, valid_lines)
-    return CopyStar_S, CopyStar_D, CopyStar_A, CopyStar, CopyStar_SV
+    (CopyStar_S, CopyStar_D, CopyStar_A, CopyStar, CopyStar_SV,
+    CopyStar_AIA, CopyStar_AVA, CopyStar_AHA,
+    CopyStar_LA, CopyStar_RA, CopyStar_TA, CopyStar_BA,
+    CopyStar_AL) = post_processing(pre_processed_img, sorted_corners, valid_lines)
+    return (CopyStar_S, CopyStar_D, CopyStar_A, CopyStar, CopyStar_SV,
+            CopyStar_AIA, CopyStar_AVA, CopyStar_AHA,
+            CopyStar_LA, CopyStar_RA, CopyStar_TA, CopyStar_BA,
+            CopyStar_AL)
