@@ -151,7 +151,7 @@ def intersection_detection(contour_img, contours):
     return intersection_img, merged_centroids, arrow_centroid
 
 def orient_image(intersection_img, merged_centroids, arrow_centroid):
-    # determine side arrow is on assuming arrow is centred
+    # determine which side arrow is on assuming arrow is centred
     def get_closest_side(img, arrow_centroid):
         height, width = img.shape[:2]
 
@@ -205,19 +205,19 @@ def orient_image(intersection_img, merged_centroids, arrow_centroid):
 
     return rotated_img, rotated_centroids
 
-def target_detection(rotated_img, rotated_centroids, LineC_T_C1):
+def target_detection(rotated_img, rotated_centroids, LineC_Const):
     superposition_img = rotated_img.copy()
-    for centroid in LineC_T_C1:
+    for centroid in LineC_Const:
         cv.circle(superposition_img, (int(centroid[0]), int(centroid[1])), 8, (0, 0, 0), -1)
     
     #cv.imshow("superposition_img", superposition_img)
     #k = cv.waitKey(0)
     #cv.destroyWindow("superposition_img")
 
-    # determine subset of LineC_T_C1 that are detected
+    # determine subset of LineC_Const that are detected
     detected_centroids = []
     distance_threshold = 100 # required proximity of detected centroids to template centroids
-    for template_centroid in LineC_T_C1:
+    for template_centroid in LineC_Const:
         for centroid in rotated_centroids:
             distance = np.sqrt((centroid[0] - template_centroid[0])**2 + (centroid[1] - template_centroid[1])**2)
             if distance < distance_threshold:
@@ -233,7 +233,7 @@ def target_detection(rotated_img, rotated_centroids, LineC_T_C1):
 
     return detected_img, detected_centroids
 
-def post_processing(detected_img, rotated_centroids, detected_centroids, LineC_T_C1):    
+def post_processing(detected_img, rotated_centroids, detected_centroids, LineC_Const):    
     # determine number of lines crossed on left and right sides
     left_centroids = []
     right_centroids = []
@@ -292,14 +292,14 @@ def post_processing(detected_img, rotated_centroids, detected_centroids, LineC_T
                 break
     
     # determine horizontal and vertical centres of cancellation
-    def calculate_CoC(detected_centroids, LineC_T_C1):
+    def calculate_CoC(detected_centroids, LineC_Const):
         # calculate the mean positions
-        mean_x_targets, mean_y_targets = np.mean(LineC_T_C1, axis=0)
+        mean_x_targets, mean_y_targets = np.mean(LineC_Const, axis=0)
         mean_x_detected, mean_y_detected = np.mean(detected_centroids, axis=0)
 
         # calculate the leftmost, bottommost, rightmost, and topmost targets
-        leftmost_target, bottommost_target = np.min(LineC_T_C1, axis=0)
-        rightmost_target, topmost_target = np.max(LineC_T_C1, axis=0)
+        leftmost_target, bottommost_target = np.min(LineC_Const, axis=0)
+        rightmost_target, topmost_target = np.max(LineC_Const, axis=0)
 
         # adjust the scale so that range of targets is from -1 to 1 with the mean of targets being 0
         LineC_HCoC = round(2 * (mean_x_detected - mean_x_targets) / (rightmost_target - leftmost_target), 2)
@@ -307,16 +307,16 @@ def post_processing(detected_img, rotated_centroids, detected_centroids, LineC_T
 
         return LineC_HCoC, LineC_VCoC
 
-    LineC_HCoC, LineC_VCoC = calculate_CoC(detected_centroids, LineC_T_C1)
+    LineC_HCoC, LineC_VCoC = calculate_CoC(detected_centroids, LineC_Const)
 
     return LineC_LS, LineC_RS, LineC, LineC_SV, LineC_HCoC, LineC_VCoC
 
-def process_image(file_path, LineC_T_C1):
+def process_image(file_path, LineC_Const):
     img = image_acquisition(file_path)
     pre_processed_img = image_pre_processing(img)
     contour_img, contours = contour_detection(img, pre_processed_img)
     intersection_img, merged_centroids, arrow_centroid = intersection_detection(contour_img, contours)
     rotated_img, rotated_centroids = orient_image(intersection_img, merged_centroids, arrow_centroid)
-    detected_img, detected_centroids = target_detection(rotated_img, rotated_centroids, LineC_T_C1)
-    LineC_LS, LineC_RS, LineC, LineC_SV, LineC_HCoC, LineC_VCoC = post_processing(detected_img, rotated_centroids, detected_centroids, LineC_T_C1)
+    detected_img, detected_centroids = target_detection(rotated_img, rotated_centroids, LineC_Const)
+    LineC_LS, LineC_RS, LineC, LineC_SV, LineC_HCoC, LineC_VCoC = post_processing(detected_img, rotated_centroids, detected_centroids, LineC_Const)
     return LineC_LS, LineC_RS, LineC, LineC_SV, LineC_HCoC, LineC_VCoC

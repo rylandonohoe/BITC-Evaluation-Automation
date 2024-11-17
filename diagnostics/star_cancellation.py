@@ -158,10 +158,10 @@ def image_reprocessing(rotated_img, rotated_arrow_centroid):
     cx, cy = rotated_arrow_centroid
 
     # define ROI
-    bottom = cy - 100
+    bottom = cy - (6*height/100)
     top = bottom - (4*height/5)
-    left = cx - (width/2 - 150)
-    right = cx + (width/2 + 50)
+    left = cx - (87*width/200)
+    right = cx + (52*width/100)
 
     resized = rotated_img[int(top):int(bottom), int(left):int(right)]
     
@@ -217,11 +217,12 @@ def normalize_img(reprocessed_img):
     point2 = second_twelfth_black_pixels[point2_index][::-1] # reverse order to get (x, y)
     point2[0] += int(width/12)
 
-    eleventh_twenty_fourth_top = thresh[:int(height/2), int(11*width/24):int(12*width/24)]
+    eleventh_twenty_fourth_top = thresh[100:int(height/2), int(11*width/24):int(12*width/24)]
     eleventh_twenty_fourth_top_black_pixels = np.argwhere(eleventh_twenty_fourth_top == 0)
     point3_index = eleventh_twenty_fourth_top_black_pixels[:, 0].argmin()
     point3 = eleventh_twenty_fourth_top_black_pixels[point3_index][::-1] # reverse order to get (x, y)
     point3[0] += int(11*width/24)
+    point3[1] += 100
 
     middle_twelfth_bottom = thresh[int(height/2):, int(5.5*width/12):int(6.5*width/12)]
     middle_bottom_black_pixels = np.argwhere(middle_twelfth_bottom == 0)

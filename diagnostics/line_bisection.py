@@ -155,7 +155,7 @@ def contour_processing(img, contours):
             cy = int(M['m01'] / M['m00'])
             distance_to_border = min(cx, cy, width - cx, height - cy)
             if distance_to_border > border_buffer: # avoid border contours caused by scanning
-                if distance_to_border < min_distance_to_border and area < 5000 and (((width/2 - 150) < cx < (width/2 + 150)) or ((height/2 - 150) < cy < (height/2 + 150))): # isolate arrow contour
+                if distance_to_border < min_distance_to_border and area < 5000 and (((width/2 - 250) < cx < (width/2 + 250)) or ((height/2 - 250) < cy < (height/2 + 250))): # isolate arrow contour
                     min_distance_to_border = distance_to_border
                     if arrow_contour is not None:
                         filtered_contours.append(arrow_contour)

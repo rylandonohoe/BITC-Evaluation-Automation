@@ -151,7 +151,7 @@ def centroid_detection(img, contours):
     return centroid_img, merged_centroids, arrow_centroid
 
 def orient_image(centroid_img, merged_centroids, arrow_centroid):
-    # determine side arrow is on assuming arrow is centred
+    # determine which side arrow is on assuming arrow is centred
     def get_closest_side(img, arrow_centroid):
         height, width = img.shape[:2]
         
@@ -206,23 +206,23 @@ def orient_image(centroid_img, merged_centroids, arrow_centroid):
     return rotated_img, rotated_centroids
 
 def post_processing(rotated_img, rotated_centroids):
-    # remove the centre four centroids from the final list (keeping them in only makes the other values less sensitive relative to one another)
-    LineC_T_C1 = []
+    # remove the four centre centroids from the final list (keeping them in only makes the other values less sensitive relative to one another)
+    LineC_Const = []
     for centroid in rotated_centroids:
         height, width = rotated_img.shape[:2]
         x, y = centroid
         if not ((width/2 - 200) <= x <= (width/2 + 200)):
-            LineC_T_C1.append(centroid)
+            LineC_Const.append(centroid)
 
     CoC_target_img = rotated_img.copy()
-    for centroid in LineC_T_C1:
+    for centroid in LineC_Const:
             cv.circle(CoC_target_img, (int(centroid[0]), int(centroid[1])), 8, (0, 0, 0), -1)
 
     #cv.imshow("CoC_target_img", CoC_target_img)
     #k = cv.waitKey(0)
     #cv.destroyWindow("CoC_target_img")
 
-    return CoC_target_img, LineC_T_C1
+    return CoC_target_img, LineC_Const
 
 def process_image(file_path):
     img = image_acquisition(file_path)
@@ -230,5 +230,5 @@ def process_image(file_path):
     contour_img, contours = contour_detection(img, pre_processed_img)
     centroid_img, merged_centroids, arrow_centroid = centroid_detection(img, contours)
     rotated_img, rotated_centroids = orient_image(centroid_img, merged_centroids, arrow_centroid)
-    CoC_target_img, LineC_T_C1 = post_processing(rotated_img, rotated_centroids)
-    return LineC_T_C1
+    CoC_target_img, LineC_Const = post_processing(rotated_img, rotated_centroids)
+    return LineC_Const
